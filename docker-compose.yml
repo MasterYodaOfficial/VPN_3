@@ -1,0 +1,10 @@
+services:
+  quickvpn_bot:
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
+    container_name: quickvpn_bot
+    env_file:
+      - .env
+    volumes:
+      - ./db.sqlite3:/app_bot/db.sqlite3
