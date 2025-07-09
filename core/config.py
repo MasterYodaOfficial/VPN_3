@@ -13,7 +13,16 @@ class Settings:
 
     # Telegram Bot
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
+    BOT_NAME: str = os.getenv("BOT_NAME")
+    SUPPORT_NAME: str = os.getenv("SUPPORT_NAME", "Support_VPN")
+    OWNER_NAME:str = os.getenv("OWNER_NAME")
+    ADMINS = os.getenv("ADMINS", None)
+    ADMIN_IDS = []
+    if ADMINS:
+        ADMIN_IDS = [int(uid.strip()) for uid in ADMINS.split(",") if uid.strip()]
 
+    # Промо-доступ
+    TRIAL_DAYS: int = int(os.getenv("TRIAL_DAYS", 0))
 
 
 

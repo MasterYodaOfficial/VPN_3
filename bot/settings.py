@@ -1,7 +1,10 @@
 from aiogram import Dispatcher, Bot, F
 from aiogram.client.default import DefaultBotProperties
 from core.config import settings
+
 from bot.handlers.start import start_command
+from bot.handlers.about import about_command
+from bot.handlers.profile import profile_command
 from aiogram.filters import Command
 from bot.utils.commands import start_bot
 from bot.utils.logger import logger
@@ -23,6 +26,9 @@ async def run_bot() -> None:
 
     # Команды
     dp.message.register(start_command, Command('start'))
+    dp.message.register(about_command, Command('about'))
+    dp.message.register(profile_command, Command('profile'))
+
 
     logger.info("Инициализация бота выполнена, старт...")
     await dp.start_polling(bot)

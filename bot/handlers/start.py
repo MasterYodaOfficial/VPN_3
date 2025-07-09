@@ -1,8 +1,9 @@
 from aiogram.types import Message, FSInputFile
 from aiogram.fsm.context import FSMContext
 from bot.services.user_service import register_user_service
-from bot.utils.messages import start_message
+from bot.utils.messages import start_message, trial_message
 from bot.utils.logger import logger
+from core.config import settings
 
 
 async def start_command(message: Message, state: FSMContext):
@@ -11,7 +12,7 @@ async def start_command(message: Message, state: FSMContext):
     welcome_image = FSInputFile("bot/media/welcome.jpg")
     if message.text and len(message.text.split()) > 1:
         referral_code = message.text.split()[1]
-    await register_user_service(
+    user_db = await register_user_service(
         message=message,
         referral_code=referral_code
     )
@@ -21,4 +22,6 @@ async def start_command(message: Message, state: FSMContext):
             name=message.from_user.first_name
         )
     )
+    if user_db.has_trial and settings.TRIAL_DAYS > 0: # Если есть промо период в боте, будет сообщение.
+        await message.answer(trial_message)
     await state.clear()

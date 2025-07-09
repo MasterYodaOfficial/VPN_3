@@ -23,10 +23,24 @@ class User(Base):
     invited_users = relationship("User", back_populates="inviter")
 
     referral_code = Column(String, unique=True, index=True)
+    is_admin = Column(Boolean, default=False)
+    has_trial = Column(Boolean, default=True)
 
     # Связи
     subscriptions = relationship("Subscription", back_populates="user")
     payments = relationship("Payment", back_populates="user")
+
+    @property
+    def active_subscriptions(self):
+        return [sub for sub in self.subscriptions if sub.is_active]
+
+    @property
+    def total_subscriptions_count(self) -> int:
+        return len(self.subscriptions)
+
+    @property
+    def active_subscriptions_count(self) -> int:
+        return len(self.active_subscriptions)
 
 
 class Subscription(Base):
