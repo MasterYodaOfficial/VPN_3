@@ -8,3 +8,4 @@ services:
       - .env
     volumes:
       - ./db.sqlite3:/app_bot/db.sqlite3
+      - ./logs:/app_bot/logs

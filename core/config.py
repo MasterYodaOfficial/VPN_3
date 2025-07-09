@@ -23,6 +23,7 @@ class Settings:
 
     # Промо-доступ
     TRIAL_DAYS: int = int(os.getenv("TRIAL_DAYS", 0))
+    REFERRAL_COMMISSION_PERCENT: int = int(os.getenv("REFERRAL_COMMISSION_PERCENT", 10))
 
 
 

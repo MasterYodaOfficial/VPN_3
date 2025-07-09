@@ -19,7 +19,8 @@ async def start_command(message: Message, state: FSMContext):
     await message.answer_photo(
         photo=welcome_image,
         caption=start_message.format(
-            name=message.from_user.first_name
+            name=message.from_user.first_name,
+            commission_precent=settings.REFERRAL_COMMISSION_PERCENT
         )
     )
     if user_db.has_trial and settings.TRIAL_DAYS > 0: # Если есть промо период в боте, будет сообщение.

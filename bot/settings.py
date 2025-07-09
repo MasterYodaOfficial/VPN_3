@@ -5,6 +5,7 @@ from core.config import settings
 from bot.handlers.start import start_command
 from bot.handlers.about import about_command
 from bot.handlers.profile import profile_command
+from bot.handlers.referral import referral_command
 from aiogram.filters import Command
 from bot.utils.commands import start_bot
 from bot.utils.logger import logger
@@ -28,6 +29,7 @@ async def run_bot() -> None:
     dp.message.register(start_command, Command('start'))
     dp.message.register(about_command, Command('about'))
     dp.message.register(profile_command, Command('profile'))
+    dp.message.register(referral_command, Command('referral'))
 
 
     logger.info("Инициализация бота выполнена, старт...")

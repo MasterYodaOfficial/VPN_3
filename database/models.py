@@ -42,6 +42,10 @@ class User(Base):
     def active_subscriptions_count(self) -> int:
         return len(self.active_subscriptions)
 
+    @property
+    def invited_users_count(self) -> int:
+        return len(self.invited_users)
+
 
 class Subscription(Base):
     __tablename__ = "subscriptions"

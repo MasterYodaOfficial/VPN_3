@@ -7,13 +7,18 @@ from sqlalchemy.orm import selectinload
 
 
 
-async def get_user_by_telegram_id(session, telegram_id: int) -> Optional[User]:
+async def get_user_by_telegram_id(session: AsyncSession, telegram_id: int) -> Optional[User]:
     result = await session.execute(
         select(User)
-        .options(selectinload(User.subscriptions))
+        .options(
+            selectinload(User.subscriptions),
+            selectinload(User.invited_users),
+            selectinload(User.inviter),
+        )
         .where(User.telegram_id == telegram_id)
     )
     return result.scalar_one_or_none()
+
 
 
 async def get_user_by_referral_code(session: AsyncSession, referral_code: str) -> Optional[User]:
