@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Запуск Telegram-бота..."
+echo "🚀 Запуск контейнера Telegram-бота..."
 exec python /app_bot/bot/main.py
 

@@ -15,6 +15,8 @@ class User(Base):
     username = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    balance = Column(Integer, default=0)
+
     # Реферальная система
     inviter_id = Column(Integer, ForeignKey("users.telegram_id"), nullable=True)
     inviter = relationship("User", remote_side=[telegram_id], back_populates="invited_users")
@@ -35,6 +37,8 @@ class Subscription(Base):
     start_date = Column(DateTime(timezone=True), server_default=func.now())
     end_date = Column(DateTime(timezone=True), nullable=False)
     is_active = Column(Boolean, default=True)
+
+    service_name = Column(String, nullable=False)
 
     tariff_id = Column(Integer, ForeignKey("tariffs.id"))
 
@@ -70,7 +74,7 @@ class Server(Base):
     name = Column(String, nullable=False)
     api_url = Column(String, nullable=False)
 
-    link = Column(String, nullable=True)
+    link_ip = Column(String, nullable=True)
     login = Column(String, nullable=True)
     password = Column(String, nullable=True)
 
