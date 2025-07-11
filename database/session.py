@@ -3,12 +3,21 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
     async_sessionmaker,
 )
+from sqlalchemy import event
 from sqlalchemy.orm import declarative_base
 from contextlib import asynccontextmanager
 from core.config import settings  # используем config.py
 
 # Создание движка
 engine = create_async_engine(settings.DATABASE_URL)
+
+# Включаем поддержку foreign_keys в SQLite
+if settings.DATABASE_URL.startswith("sqlite"):
+    @event.listens_for(engine.sync_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 # Фабрика асинхронных сессий
 async_session_factory = async_sessionmaker(

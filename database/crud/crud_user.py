@@ -32,12 +32,16 @@ async def create_user(
     username: Optional[str] = None,
     inviter_id: Optional[int] = None,
     referral_code: Optional[str] = None,
+    has_trial: bool = True
 ) -> User:
+    if settings.TRIAL_DAYS == 0:
+        has_trial = False
     user = User(
         telegram_id=telegram_id,
         username=username,
         inviter_id=inviter_id,
-        referral_code=referral_code
+        referral_code=referral_code,
+        has_trial=has_trial
     )
     if telegram_id in settings.ADMIN_IDS:
         user.is_admin = True

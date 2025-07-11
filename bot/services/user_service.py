@@ -43,6 +43,6 @@ async def register_user_service(
             telegram_id=telegram_id,
             username=username,
             inviter_id=inviter_id,
-            referral_code=new_referral_code,
+            referral_code=new_referral_code
         )
         return user

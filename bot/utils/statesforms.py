@@ -9,7 +9,7 @@ class StepForm(StatesGroup):
     # Profile движения
     COMMAND = State()
 
-    CHOOSE_ACTION = State()  # Ожидание выбора действия (купить, продлить, пересобрать, активировать промо и т.п.)
+    CHOOSE_ACTION_PROFILE = State()  # Ожидание выбора действия (купить, продлить, пересобрать, активировать промо и т.п.)
 
     # Подписка
     SELECT_TARIFF = State()       # Выбор тарифа

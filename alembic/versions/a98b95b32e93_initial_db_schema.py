@@ -1,8 +1,8 @@
-"""Initial migration
+"""Initial DB schema
 
-Revision ID: 714348df82c5
+Revision ID: a98b95b32e93
 Revises: 
-Create Date: 2025-07-09 00:04:35.365920
+Create Date: 2025-07-11 21:45:19.701258
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '714348df82c5'
+revision: str = 'a98b95b32e93'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -36,7 +36,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('api_url', sa.String(), nullable=False),
-    sa.Column('link', sa.String(), nullable=True),
+    sa.Column('link_ip', sa.String(), nullable=True),
     sa.Column('login', sa.String(), nullable=True),
     sa.Column('password', sa.String(), nullable=True),
     sa.Column('max_clients', sa.Integer(), nullable=True),
@@ -58,8 +58,11 @@ def upgrade() -> None:
     sa.Column('telegram_id', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('balance', sa.Integer(), nullable=True),
     sa.Column('inviter_id', sa.Integer(), nullable=True),
     sa.Column('referral_code', sa.String(), nullable=True),
+    sa.Column('is_admin', sa.Boolean(), nullable=True),
+    sa.Column('has_trial', sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(['inviter_id'], ['users.telegram_id'], ),
     sa.PrimaryKeyConstraint('telegram_id')
     )
@@ -84,6 +87,8 @@ def upgrade() -> None:
     sa.Column('start_date', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('end_date', sa.DateTime(timezone=True), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('service_name', sa.String(), nullable=False),
+    sa.Column('uuid_name', sa.String(), nullable=False),
     sa.Column('tariff_id', sa.Integer(), nullable=True),
     sa.Column('promo_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['promo_id'], ['promocodes.id'], ),
@@ -98,7 +103,7 @@ def upgrade() -> None:
     sa.Column('config_data', sa.Text(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.ForeignKeyConstraint(['server_id'], ['servers.id'], ),
-    sa.ForeignKeyConstraint(['subscription_id'], ['subscriptions.id'], ),
+    sa.ForeignKeyConstraint(['subscription_id'], ['subscriptions.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###

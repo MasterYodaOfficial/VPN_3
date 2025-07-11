@@ -50,15 +50,16 @@ class User(Base):
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     telegram_id = Column(Integer, ForeignKey("users.telegram_id"))
     start_date = Column(DateTime(timezone=True), server_default=func.now())
     end_date = Column(DateTime(timezone=True), nullable=False)
     is_active = Column(Boolean, default=True)
 
     service_name = Column(String, nullable=False)
+    uuid_name = Column(String, nullable=False)
 
-    tariff_id = Column(Integer, ForeignKey("tariffs.id"))
+    tariff_id = Column(Integer, ForeignKey("tariffs.id"), nullable=True)
 
     # Промокод (если использован)
     promo_id = Column(Integer, ForeignKey("promocodes.id"), nullable=True)
@@ -66,16 +67,23 @@ class Subscription(Base):
     # Связи
     user = relationship("User", back_populates="subscriptions")
     tariff = relationship("Tariff", back_populates="subscriptions")
-    configs = relationship("Config", back_populates="subscription")
-
+    configs = relationship(
+        "Config",
+        back_populates="subscription",
+        cascade="all, delete-orphan"
+    )
     promo = relationship("Promocode", back_populates="subscriptions")
 
 
 class Config(Base):
     __tablename__ = "configs"
 
-    id = Column(Integer, primary_key=True)
-    subscription_id = Column(Integer, ForeignKey("subscriptions.id"))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    subscription_id = Column(
+        Integer,
+        ForeignKey("subscriptions.id", ondelete="CASCADE")
+    )
+
     server_id = Column(Integer, ForeignKey("servers.id"))
 
     config_data = Column(Text, nullable=False)  # Сгенерированный конфиг (vmess/vless и т.п.)
@@ -88,7 +96,7 @@ class Config(Base):
 class Server(Base):
     __tablename__ = "servers"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     api_url = Column(String, nullable=False)
 
@@ -107,7 +115,7 @@ class Server(Base):
 class Payment(Base):
     __tablename__ = "payments"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.telegram_id"))
 
     amount = Column(Float, nullable=False)
@@ -124,7 +132,7 @@ class Payment(Base):
 class Promocode(Base):
     __tablename__ = "promocodes"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     code = Column(String, unique=True, nullable=False)
     discount_percent = Column(Integer, nullable=False)  # Например: 10 = 10%
 
@@ -140,7 +148,7 @@ class Promocode(Base):
 class Tariff(Base):
     __tablename__ = "tariffs"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)  # Название: "1 месяц", "6 месяцев" и т.п.
     duration_days = Column(Integer, nullable=False)  # Сколько дней длится подписка
     price = Column(Integer, nullable=False)
