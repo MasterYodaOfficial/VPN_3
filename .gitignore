@@ -2,3 +2,5 @@
 /.venv/
 logs/
 *.zip
+*.pyc
+/db.sqlite3
