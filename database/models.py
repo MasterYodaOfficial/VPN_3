@@ -73,6 +73,7 @@ class Subscription(Base):
         cascade="all, delete-orphan"
     )
     promo = relationship("Promocode", back_populates="subscriptions")
+    payments = relationship("Payment", back_populates="subscription")
 
 
 class Config(Base):
@@ -118,15 +119,19 @@ class Payment(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.telegram_id"))
 
-    amount = Column(Float, nullable=False)
+    amount = Column(Integer, nullable=False)
     currency = Column(String, default="RUB")
     status = Column(String, default="pending")  # pending, success, failed
     method = Column(Enum(PaymentMethod), nullable=False)  # yookassa, cripto
-    external_payment_id = Column(String, unique=True)
+    external_payment_id = Column(String, unique=True, nullable=True)
+    subscription_id = Column(Integer, ForeignKey("subscriptions.id"), nullable=False)
+    tariff_id = Column(Integer, ForeignKey("tariffs.id"), nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="payments")
+    subscription = relationship("Subscription", back_populates="payments")
+    tariff = relationship("Tariff", back_populates="payments")
 
 
 class Promocode(Base):
@@ -159,6 +164,7 @@ class Tariff(Base):
 
 
     subscriptions = relationship("Subscription", back_populates="tariff")
+    payments = relationship("Payment", back_populates="tariff")
 
 
 

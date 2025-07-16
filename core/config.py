@@ -25,6 +25,11 @@ class Settings:
     TRIAL_DAYS: int = int(os.getenv("TRIAL_DAYS", 0))
     REFERRAL_COMMISSION_PERCENT: int = int(os.getenv("REFERRAL_COMMISSION_PERCENT", 10))
 
+    # Варианты оплаты
+    YOOKASSA_TOKEN: str = os.getenv("YOOKASSA_TOKEN", None)
+    if YOOKASSA_TOKEN:
+        YOOKASSA_SHOP_ID: str = os.getenv("YOOKASSA_SHOP_ID")
+    CRYPTO_TOKEN: str = os.getenv("CRYPTO_TOKEN", None)
 
 
 # Создаём синглтон

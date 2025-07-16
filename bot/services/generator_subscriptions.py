@@ -1,7 +1,6 @@
-from aiogram.types import Message, User
-from sqlalchemy.ext.asyncio import AsyncSession
+from aiogram.types import  User
 from database.models import Server, Subscription
-from database.crud.crud_subscription import create_subscription
+from database.crud.crud_subscription import create_subscription, get_user_subscriptions
 from database.crud.crud_server import get_least_loaded_servers
 from database.crud.crud_config import create_config
 from database.session import get_session
@@ -78,4 +77,14 @@ async def create_trial_sub(user: User) -> str:
         session.add_all(servers)
         await session.commit()
         return "\n".join(results)
+
+
+async def get_active_user_subscription(user: User) -> List[Subscription]:
+    """Находит все активные подписки пользователя, где User объект телеграмма пользователя"""
+    async with get_session() as session:
+        subs = await get_user_subscriptions(session, user.id)
+        active_subs = [sub for sub in subs if sub.is_active]
+        return active_subs
+
+
 

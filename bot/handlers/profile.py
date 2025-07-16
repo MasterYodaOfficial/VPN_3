@@ -1,11 +1,16 @@
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
-from bot.utils.messages import profile_message
+from bot.utils.messages import (profile_message, choose_subscription_text, choose_payment_message,
+                                choose_tariff_message, payment_message, subscription_renewed_message)
 from bot.utils.logger import logger
 from bot.services.user_service import register_user_service
-from bot.keyboards.inlines import profile_buttons
+from bot.keyboards.inlines import (profile_buttons, active_subscriptions_buttons, payments_buttons,
+                                   tariff_buttons, make_pay_link_button)
 from bot.utils.statesforms import StepForm
-from bot.services.generator_subscriptions import create_trial_sub
+from bot.services.generator_subscriptions import create_trial_sub, get_active_user_subscription
+from database.crud.crud_tariff import get_active_tariffs
+from bot.services.payment_service import create_payment_service, get_payment_status
+import time
 
 
 
@@ -37,15 +42,79 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
             config = await create_trial_sub(call.from_user)
             await call.message.answer(config)
             await call.message.delete()
-            # TODO make method getting sub_config
+            # TODO Пока подписка получается текстом, нужно чтобы была ссылка на fastAPI
             await state.clear()
             pass
         if profile_action == "new_sub":
+            # TODO Покупка новой подписки
             pass
         if profile_action == "extend":
-            # Продление подписки
-            pass
-        if profile_action == "refresh":
-            pass
+            subs_list = await get_active_user_subscription(call.from_user)
+            await call.message.edit_text(
+                text=choose_subscription_text,
+                reply_markup=active_subscriptions_buttons(subs_list)
+            )
+            await state.set_state(StepForm.CHOOSE_EXTEND_SUBSCRIPTION)
+    else:
+        await call.message.delete()
+
+
+async def get_subscription_extend(call: CallbackQuery, state: FSMContext):
+    """Получает кнопку с выбранным конфигом для продления предоставляет вариант тарифа"""
+    if call.data.startswith("renew"):
+        _, sub_id = call.data.split(":")
+        await state.update_data(sub_id=int(sub_id))
+        tariffs = await get_active_tariffs()
+        await call.message.edit_text(
+            text=choose_tariff_message,
+            reply_markup=tariff_buttons(tariffs)
+        )
+        await state.set_state(StepForm.SELECT_TARIFF)
+    else:
+        await call.message.delete()
+
+
+async def get_tariff_extend(call: CallbackQuery, state: FSMContext):
+    """Принимает тариф для продления и предоставляет вариант оплаты"""
+    if call.data.startswith("choose_tariff"):
+        _, tariff_id = call.data.split(":")
+        await state.update_data(tariff_id=int(tariff_id))
+        await call.message.edit_text(
+            text=choose_payment_message,
+            reply_markup=payments_buttons()
+        )
+        await state.set_state(StepForm.SELECT_TARIFF)
+    else:
+        await call.message.delete()
+
+
+async def get_payment_method_extend(call: CallbackQuery, state: FSMContext):
+    """Принимаем вариант оплаты формируем ссылку на оплату и ждем..."""
+    if call.data.startswith("pay"):
+        _, payment_method = call.data.split(":")
+        data = await state.get_data()
+        tariff_id = data["tariff_id"]
+        sub_id = data["sub_id"]
+        payment, tariff, subscription, pay_url = await create_payment_service(call.from_user, tariff_id, sub_id, payment_method)
+        await call.message.edit_text(
+            text=payment_message.format(
+                tariff_name=tariff.name,
+                amount=tariff.price
+            ),
+            reply_markup=make_pay_link_button(pay_url)
+        )
+        await state.set_state(StepForm.CONFIRM_PAYMENT)
+        timeout = time.time() + 7 * 60  # 7 минут ожидания
+        while time.time() < timeout:
+            status = await get_payment_status(payment)
+            if status == "paid":
+                await call.message.delete()
+                await call.message.answer(subscription_renewed_message.format(
+                    sub_name=subscription.service_name,
+                    duration_days=tariff.duration_days
+                ))
+                await confirm_payment(payment.id)
+                await state.clear()
+                return
     else:
         await call.message.delete()
