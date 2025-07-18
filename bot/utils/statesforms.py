@@ -11,10 +11,17 @@ class StepForm(StatesGroup):
 
     CHOOSE_ACTION_PROFILE = State()  # Ожидание выбора действия (купить, продлить, активировать промо и т.п.)
 
+    # Продление подписки
     CHOOSE_EXTEND_SUBSCRIPTION = State() # Выбор подписки для продления
     PAYMENT_METHOD_EXTEND = State()      # Выбор способа оплаты
-    SELECT_TARIFF = State()       # Выбор тарифа
-    CONFIRM_PAYMENT = State()     # Ожидание подтверждения оплаты (или ожидание Webhook'а)
+    SELECT_TARIFF_EXTEND = State()       # Выбор тарифа для продления
+    CONFIRM_PAYMENT_EXTEND = State()     # Ожидание подтверждения оплаты (или ожидание Webhook'а)
+
+    # Покупка новой подписки
+    SELECT_TARIFF_BUY = State()       # Выбор нового тарифа
+    PAYMENT_METHOD_BUY = State()  # Выбор способа оплаты нового тарифа
+
+
 
     # Подписка
     # SELECT_TARIFF = State()       # Выбор тарифа

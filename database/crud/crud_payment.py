@@ -1,6 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import Payment
 from database.enums import PaymentMethod
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 
 async def create_payment(
@@ -42,3 +44,19 @@ async def create_payment(
     await session.commit()
     await session.refresh(payment)
     return payment
+
+
+async def get_payment_by_id(session: AsyncSession, payment_id):
+    """
+    Получает платеж из БД по его id
+    :param session:
+    :param payment_id:
+    :return: Payment из БД
+    """
+    result = await session.execute(
+        select(Payment)
+        .options(selectinload(Payment.subscription))
+        .options(selectinload(Payment.tariff))
+        .where(Payment.id == payment_id)
+    )
+    return result.scalars().first()

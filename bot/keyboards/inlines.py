@@ -15,6 +15,7 @@ def profile_buttons(active_subscriptions_count: int, has_trial: bool) -> InlineK
     kb.button(text="➕ Купить новую подписку", callback_data="profile:new_sub")
     if active_subscriptions_count > 0:
         kb.button(text="🔁 Продлить подписку", callback_data="profile:extend")
+        kb.button(text="⚙️ Получить действующий конфиг", callback_data="profile:get_conf")
     kb.adjust(1)
     return kb.as_markup()
 
@@ -33,8 +34,8 @@ def active_subscriptions_buttons(sub_list: List[Subscription]) -> InlineKeyboard
     """Формирует кнопки активных подписок"""
     kb = InlineKeyboardBuilder()
     for sub in sub_list:
-        server_name = sub.server.name
-        expires = sub.expires_at.strftime("%d.%m.%y")
+        server_name = sub.service_name
+        expires = sub.end_date.strftime("%d.%m.%y")
         label = f"🛡️ {server_name} • до {expires}"
         kb.button(
             text=label,
@@ -68,4 +69,15 @@ def make_pay_link_button(url: str) -> InlineKeyboardMarkup:
     """Кнопка оплатить"""
     kb = InlineKeyboardBuilder()
     kb.button(text="💳 Оплатить", url=url)
+    return kb.as_markup()
+
+def tariff_buttons_buy(tariffs: List[Tariff]) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    for tariff in tariffs:
+        button_text = f"{tariff.name} — {tariff.price}₽"
+        kb.button(
+            text=button_text,
+            callback_data=f"buy_tariff:{tariff.id}"
+        )
+    kb.adjust(1)
     return kb.as_markup()

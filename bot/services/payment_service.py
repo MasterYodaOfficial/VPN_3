@@ -1,23 +1,23 @@
-from bot.utils.messages import subscription_renewed_message
 from database.models import Payment, Tariff, Subscription
 from aiogram.types import User as User_tg
-from database.crud.crud_payment import create_payment
+from database.crud.crud_payment import create_payment, get_payment_by_id
 from database.crud.crud_tariff import get_tariff_by_id
-from database.crud.crud_subscription import get_subscription_by_id
+from database.crud.crud_subscription import get_subscription_by_id, create_subscription
 from database.enums import PaymentMethod
-from bot.payments.yookassa import create_payment_yookassa
+from bot.payments.yookassa import create_payment_yookassa, cancel_yookassa_payment
 from database.session import get_session
 from bot.utils.logger import logger
 import asyncio
 from yookassa import Payment as YooPayment
+from datetime import timedelta
 
 
 
 async def create_payment_service(
         user: User_tg,
         tariff_id: int,
-        sub_id:int,
-        method: str
+        method: str,
+        sub_id: int = None,
 ) -> tuple[Payment, Tariff, Subscription, str] | None:
 
     """
@@ -26,7 +26,16 @@ async def create_payment_service(
     try:
         async with get_session() as session:
             tariff: Tariff = await get_tariff_by_id(session, tariff_id)
-            subscription: Subscription = await get_subscription_by_id(session, sub_id)
+            if sub_id:
+                subscription: Subscription = await get_subscription_by_id(session, sub_id)
+            else:
+                subscription: Subscription = await create_subscription(
+                    session=session,
+                    telegram_id=user.id,
+                    tariff_id=tariff_id
+                )
+                sub_id = subscription.id
+
             if PaymentMethod.yookassa == method:
                 method = PaymentMethod(method)
                 external_id, payment_url = await create_payment_yookassa(tariff.price, tariff.name)
@@ -41,6 +50,8 @@ async def create_payment_service(
                 subscription_id=sub_id,
                 external_payment_id=external_id
             )
+            await session.commit()
+            await session.refresh(payment)
             return payment, tariff, subscription, payment_url
     except BaseException as ex:
         logger.error(f"Ошибка в создании платежа {ex}")
@@ -64,3 +75,43 @@ async def get_payment_status(payment: Payment):
     if method == "crypto":
         pass
         # TODO сделать проверку крипты
+
+
+async def confirm_payment_service(payment_id: int) -> bool:
+    """
+    Подтверждает оплату, продлевает подписку на количество дней согласно тарифу.
+    :param payment_id: ID платежа
+    :return: True, если операция успешна, иначе False
+    """
+    async with get_session() as session:
+        # Получаем платеж
+        payment: Payment = await get_payment_by_id(session, payment_id)
+        payment.status = "success"
+        subscription = payment.subscription
+        tariff = payment.tariff
+        subscription.end_date += timedelta(days=tariff.duration_days)
+        await session.commit()
+        return True
+
+async def error_payment_service(payment_id: int) -> bool:
+    """
+    Сменяет статус платежа на ошибку.
+    :param payment_id:
+    :return:
+    """
+    async with get_session() as session:
+        payment: Payment = await get_payment_by_id(session, payment_id)
+        # Отмена в зависимости от метода оплаты в платежной системе
+        if payment.method == PaymentMethod.yookassa:
+            try:
+                if payment.external_payment_id:
+                    await cancel_yookassa_payment(payment.external_payment_id)
+            except Exception as e:
+                logger.error(f"Ошибка при отмене платежа {payment_id} в ЮKassa: {e}")
+                return False
+        if payment.method == PaymentMethod.crypto:
+            # TODO Сделать отмену для крипты
+            pass
+        payment.status = "failed"
+        await session.commit()
+        return True
