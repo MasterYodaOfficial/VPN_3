@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.session import get_db_session
 from database.models import Subscription
@@ -20,4 +20,7 @@ async def get_subscription_config(
     if not configs:
         raise HTTPException(status_code=404, detail="No active config found")
     yaml_config = generate_vpn_yaml(configs)
-    return ConfigResponse(config=yaml_config)
+    return Response(
+        content=yaml_config,
+        media_type="text/yaml"
+    )
