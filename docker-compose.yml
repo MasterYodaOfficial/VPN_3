@@ -9,3 +9,15 @@ services:
     volumes:
       - ./db.sqlite3:/app_bot/db.sqlite3
       - ./logs:/app_bot/logs
+
+  quickvpn_api:
+    build:
+      context: .
+      dockerfile: fastapi_app/Dockerfile
+    container_name: quickvpn_api
+    env_file:
+      - .env
+    volumes:
+      - ./db.sqlite3:/app_fast_api/db.sqlite3
+    ports:
+      - "8000:8000"

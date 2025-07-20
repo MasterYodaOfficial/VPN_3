@@ -105,7 +105,7 @@ class XUIHandler:
             print(f"Error adding client: {str(ex)}")
             return None
 
-    async def get_conf_user_vless(self, email: str) -> Optional[str]:
+    async def get_conf_user_vless(self, email: str, conf_name: str) -> Optional[str]:
         """Асинхронная генерация конфигурационной ссылки."""
         try:
             inbounds = await self.get_clients()
@@ -133,7 +133,7 @@ class XUIHandler:
                             inbound=inbound,
                             stream_settings=stream_settings,
                             server_address=server_address,
-                            email=email
+                            conf_name=conf_name
                         )
             print(f"Client {email} not found")
             return None
@@ -172,7 +172,7 @@ class XUIHandler:
         inbound = kwargs['inbound']
         stream_settings = kwargs['stream_settings']
         server_address = kwargs['server_address']
-        email = kwargs['email']
+        conf_name = kwargs['conf_name']
 
         params = {
             'type': stream_settings.get('network', 'tcp'),
@@ -228,7 +228,7 @@ class XUIHandler:
             '',
             '',
             urllib.parse.urlencode(clean_params, doseq=True, safe='/:'),
-            urllib.parse.quote(email, safe='')  # Кодируем только email
+            f"{conf_name}"
         ))
 
 
