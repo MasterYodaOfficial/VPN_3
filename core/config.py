@@ -31,6 +31,7 @@ class Settings:
         YOOKASSA_SHOP_ID: str = os.getenv("YOOKASSA_SHOP_ID")
     CRYPTO_TOKEN: str = os.getenv("CRYPTO_TOKEN", None)
 
+    DOMAIN_API: str = os.getenv("DOMAIN_API")
 
 # Создаём синглтон
 settings = Settings()

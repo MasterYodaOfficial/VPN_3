@@ -8,6 +8,7 @@ from database.session import get_session
 from typing import List, Tuple, Optional
 from bot.utils.xui_api_deepseek import XUIHandler
 import asyncio
+from core.config import settings
 
 
 
@@ -81,13 +82,11 @@ async def create_trial_sub(user_tg: User) -> str | None:
                 )
             )
         # Запускаем все задачи параллельно
-        results: List[str] = await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
         session.add_all(servers)
         await session.commit()
-        cleaned_results = list(filter(None, results))
-        if not cleaned_results:
-            return None
-        return "\n".join(cleaned_results)
+        return f"https://{settings.DOMAIN_API}/subscription/{subscription.service_name}"
+
 
 
 async def get_active_user_subscription(user: User) -> List[Subscription]:
@@ -129,13 +128,11 @@ async def activate_subscription(sub_id) -> str | None:
                 )
             )
         # Запускаем все задачи параллельно
-        results: List[str] = await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
         session.add_all(servers)
         await session.commit()
-        cleaned_results = list(filter(None, results))
-        if not cleaned_results:
-            return None
-        return "\n".join(cleaned_results)
+        return f"https://{settings.DOMAIN_API}/subscription/{subscription.service_name}"
+
 
 
 async def deactivate_only_subscription(sub_id):

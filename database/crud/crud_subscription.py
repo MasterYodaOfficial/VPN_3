@@ -5,6 +5,8 @@ from sqlalchemy import select
 from database.models import Subscription, Tariff
 from typing import Optional, List
 from core.config import settings
+from sqlalchemy.orm import selectinload
+
 
 
 def generate_service_name(telegram_id: int) -> str:
@@ -73,5 +75,15 @@ async def get_user_subscriptions(session: AsyncSession, telegram_id: int) -> Lis
 async def get_subscription_by_id(session: AsyncSession, subscription_id: int) -> Subscription | None:
     """Получает подписку по его id"""
     result = await session.execute(select(Subscription).where(Subscription.id == subscription_id))
+    subscription = result.scalars().first()
+    return subscription
+
+async def get_subscription_with_configs_by_service_name(session, service_name: str) -> Subscription | None:
+    stmt = (
+        select(Subscription)
+        .options(selectinload(Subscription.configs))  # подгрузка связанных конфигов
+        .where(Subscription.service_name == service_name)
+    )
+    result = await session.execute(stmt)
     subscription = result.scalars().first()
     return subscription

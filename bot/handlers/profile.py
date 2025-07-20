@@ -33,7 +33,6 @@ async def profile_command(message: Message, state: FSMContext):
     )
     await state.set_state(StepForm.CHOOSE_ACTION_PROFILE)
 
-
 async def get_action_profile(call: CallbackQuery, state: FSMContext):
 
     """Принимает кнопки после команды профайл. Продлить подписку, купить подписку, пробная версия и так далее"""
@@ -68,7 +67,6 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
     else:
         await call.message.delete()
 
-
 async def get_subscription_extend(call: CallbackQuery, state: FSMContext):
     """Получает кнопку с выбранным конфигом для продления предоставляет вариант тарифа"""
     if call.data.startswith("renew"):
@@ -83,7 +81,6 @@ async def get_subscription_extend(call: CallbackQuery, state: FSMContext):
     else:
         await call.message.delete()
 
-
 async def get_tariff_extend(call: CallbackQuery, state: FSMContext):
     """Принимает тариф для продления и предоставляет вариант оплаты"""
     if call.data.startswith("choose_tariff"):
@@ -96,7 +93,6 @@ async def get_tariff_extend(call: CallbackQuery, state: FSMContext):
         await state.set_state(StepForm.PAYMENT_METHOD_EXTEND)
     else:
         await call.message.delete()
-
 
 async def get_payment_method_extend(call: CallbackQuery, state: FSMContext):
     """Принимаем вариант оплаты формируем ссылку на оплату и ждем..."""
