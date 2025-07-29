@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Конфигурация VPN</title>
+    <!-- Подключаем скрипты -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    <style>
+        :root {
+            --tg-theme-bg-color: #f4f4f9;
+            --tg-theme-text-color: #000000;
+            --tg-theme-button-color: #007bff;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-hint-color: #6c757d;
+            --tg-theme-secondary-bg-color: #ffffff;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 { font-size: 24px; margin-bottom: 15px; }
+        p { font-size: 16px; margin-bottom: 30px; line-height: 1.5; color: var(--tg-theme-hint-color);}
+        .btn-group { display: flex; flex-direction: column; gap: 15px; width: 100%; }
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px 20px;
+            border-radius: 12px;
+            color: var(--tg-theme-button-text-color);
+            background-color: var(--tg-theme-button-color);
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s ease, background-color 0.2s;
+            box-sizing: border-box;
+        }
+        .btn:active { transform: scale(0.97); }
+        .config-view {
+            margin-top: 30px;
+            padding: 25px;
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid #eee;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Ваша подписка готова!</h2>
+        <p>Используйте один из этих способов, чтобы добавить подписку в ваше VPN-приложение (Happ, Hiddify и др.)</p>
+
+        <div class="config-view">
+            <div class="btn-group">
+                <button class="btn" onclick="copyAndNotify()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Копировать ссылку
+                </button>
+                 <button class="btn" onclick="toggleQrCode()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg>
+                    Показать QR-код
+                </button>
+            </div>
+            <div id="qrcode" class="hidden"></div>
+        </div>
+    </div>
+
+<script>
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+
+    const subscriptionName = "{{ subscription_name }}";
+    const domain = "{{ domain }}";
+    // Base64 - самый универсальный формат для подписок, его понимают почти все клиенты.
+    const subscriptionUrl = `https://${domain}/api/v1/subscription/${subscriptionName}?format=base64`;
+
+    function copyAndNotify() {
+        navigator.clipboard.writeText(subscriptionUrl).then(() => {
+            Telegram.WebApp.showAlert('✅ Ссылка скопирована! Теперь откройте ваше VPN-приложение и вставьте ее как новую подписку.');
+        }).catch(err => {
+            Telegram.WebApp.showAlert('❌ Ошибка копирования. Пожалуйста, попробуйте еще раз.');
+        });
+    }
+
+    function toggleQrCode() {
+        const qrCodeContainer = document.getElementById('qrcode');
+        const isHidden = qrCodeContainer.classList.contains('hidden');
+
+        if (isHidden) {
+            // Если QR-код еще не сгенерирован, генерируем его
+            if (qrCodeContainer.innerHTML === '') {
+                 new QRCode(qrCodeContainer, {
+                    text: subscriptionUrl,
+                    width: 220,
+                    height: 220,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }
+            qrCodeContainer.classList.remove('hidden');
+        } else {
+            qrCodeContainer.classList.add('hidden');
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -2,7 +2,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from bot.utils.messages import (profile_message, choose_subscription_text, choose_payment_message,
                                 choose_tariff_message, payment_message, subscription_renewed_message,
-                                subscription_purchased_with_config_message)
+                                subscription_purchased_with_config_message, trial_message)
 from bot.utils.logger import logger
 from bot.services.user_service import register_user_service
 from bot.keyboards.inlines import (profile_buttons, active_subscriptions_buttons, payments_buttons,
@@ -13,6 +13,7 @@ from bot.services.generator_subscriptions import (create_trial_sub, get_active_u
 from database.crud.crud_tariff import get_active_tariffs
 from bot.services.payment_service import (create_payment_service, get_payment_status, confirm_payment_service,
                                           error_payment_service)
+from core.config import settings
 import time
 import asyncio
 
@@ -40,14 +41,26 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
     logger.info(f"{call.from_user.id}, {call.from_user.first_name}")
     if call.data.startswith("profile"):
         _, profile_action = call.data.split(":")
-        if profile_action == "trial":
+        if profile_action == "trial": # sub_name, hiddify_url, happ_url, logo_name
             await call.message.edit_text("Генерируем...")
-            config = await create_trial_sub(call.from_user)
-            await call.message.answer(config)
-            await call.message.delete()
-            # TODO Пока подписка получается текстом, нужно чтобы была ссылка на fastAPI
+            subscription = await create_trial_sub(call.from_user)
+            if subscription:
+                # Формируем две разные ссылки
+                base_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{subscription.service_name}"
+                hiddify_url = f"{base_url}?client=hiddify"
+                happ_url = f"{base_url}?client=happ"
+
+                await call.message.edit_text(
+                    text=trial_message.format(
+                        hiddify_url=hiddify_url,
+                        happ_url=happ_url,
+                        logo_name=settings.LOGO_NAME
+                    ),
+                    disable_web_page_preview=True
+                )
+            else:
+                await call.message.edit_text("❌ Не удалось создать подписку. Попробуйте позже.")
             await state.clear()
-            pass
         if profile_action == "new_sub":
             tariffs = await get_active_tariffs()
             await call.message.edit_text(
@@ -174,14 +187,26 @@ async def get_payment_method_buy(call: CallbackQuery, state: FSMContext):
         while time.time() < timeout:
             status = await get_payment_status(payment)
             if status == "paid":
-                config = await activate_subscription(subscription.id)
-                await call.message.delete()
-                await call.message.answer(subscription_purchased_with_config_message.format(
-                    tariff_name=tariff.name,
-                    sub_name=subscription.service_name,
-                    config_str=config
-                ))
+                # В этом блоке:
+                await activate_subscription(subscription.id)  # Эта функция должна возвращать объект подписки
                 await confirm_payment_service(payment.id)
+                await call.message.delete()
+
+                # Формируем две разные ссылки
+                base_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{subscription.service_name}"
+                hiddify_url = f"{base_url}?client=hiddify"
+                happ_url = f"{base_url}?client=happ"
+
+                await call.message.answer(  # tariff_name, sub_name, hiddify_url, happ_url, logo_name
+                    text=subscription_purchased_with_config_message.format(
+                        tariff_name=tariff.name,
+                        sub_name=subscription.service_name,
+                        hiddify_url=hiddify_url,
+                        happ_url=happ_url,
+                        logo_name=settings.LOGO_NAME
+                    ),
+                    disable_web_page_preview=True
+                )
                 await state.clear()
                 return
             current_state = await state.get_state()

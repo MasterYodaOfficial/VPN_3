@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ./database /app_fast_api/database
 COPY ./fastapi_app /app_fast_api/fastapi_app
 COPY ./core /app_fast_api/core
+COPY ./templates /app_fast_api/templates
 
 ENV PYTHONPATH=/app_fast_api
 

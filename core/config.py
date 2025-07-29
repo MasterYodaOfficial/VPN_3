@@ -8,13 +8,14 @@ load_dotenv(dotenv_path=env_path)
 
 
 class Settings:
-    # База данных
+
     DATABASE_URL: str = os.getenv("DATABASE_URL")
 
     # Telegram Bot
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
     BOT_NAME: str = os.getenv("BOT_NAME")
     SUPPORT_NAME: str = os.getenv("SUPPORT_NAME", "Support_VPN")
+    SUPPORT_URL: str = os.getenv("SUPPORT_URL")
     OWNER_NAME:str = os.getenv("OWNER_NAME")
     ADMINS = os.getenv("ADMINS", None)
     ADMIN_IDS = []
@@ -32,6 +33,7 @@ class Settings:
     CRYPTO_TOKEN: str = os.getenv("CRYPTO_TOKEN", None)
 
     DOMAIN_API: str = os.getenv("DOMAIN_API")
+    LOGO_NAME: str = os.getenv("LOGO_NAME")
 
-# Создаём синглтон
+
 settings = Settings()

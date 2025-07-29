@@ -1,123 +1,60 @@
-# import yaml
-# from urllib.parse import urlparse, parse_qs, unquote
-#
-# def parse_vless_uri(uri: str) -> dict:
-#     # uri: "vless://uuid@host:port?query#name"
-#     parsed = urlparse(uri)
-#     scheme = parsed.scheme  # vless
-#     userinfo = parsed.username  # uuid
-#     host = parsed.hostname
-#     port = parsed.port
-#     query = parse_qs(parsed.query)
-#     name = unquote(parsed.fragment)  # название
-#
-#     proxy = {
-#         "name": name or f"{host}:{port}",
-#         "type": scheme,
-#         "server": host,
-#         "port": port,
-#         "uuid": userinfo,
-#         "tls": query.get("security", [""])[0] == "tls",
-#         "network": query.get("type", [""])[0],
-#         "other_params": {}
-#     }
-#
-#     # Добавим остальные параметры в other_params
-#     for k, v in query.items():
-#         if k not in ("security", "type"):
-#             proxy["other_params"][k] = v[0]
-#
-#     return proxy
-#
-# def generate_vpn_yaml(configs: list[str]) -> str:
-#     proxies = [parse_vless_uri(c) for c in configs]
-#     data = {
-#         "proxies": proxies,
-#         "name": "MyVPN Configs ❤️"
-#     }
-#     return yaml.dump(data, sort_keys=False, allow_unicode=True)
-
 import urllib.parse
-from collections import defaultdict
 from typing import List, Dict, Any
 import yaml
 
 
-def generate_vpn_yaml(configs: List[str]) -> str:
+def generate_yaml_for_hiddify(configs: List[str], logo_name: str) -> str:
     """
-    Преобразует список VLESS-конфигов в YAML для VPN приложений
+    Генерирует полнофункциональный YAML-профиль для Hiddify
+    с поддержкой кириллицы, эмодзи и групп серверов.
     """
     proxies = []
     proxy_groups = []
-    country_proxies = defaultdict(list)
 
-    for uri in configs:
+    for i, uri in enumerate(configs):
         try:
-            # Парсинг URI
             parsed = urllib.parse.urlparse(uri)
+            # Раскодируем имена с кириллицей и эмодзи для красивого отображения в Hiddify
+            proxy_name = urllib.parse.unquote(parsed.fragment) or f"Server-{i + 1}"
 
-            # Извлечение базовых параметров
-            uuid = parsed.username
-            server = parsed.hostname
-            port = parsed.port
-            country = parsed.fragment
-
-            # Парсинг query-параметров
             query_params = urllib.parse.parse_qs(parsed.query)
-            get_first = lambda key: query_params.get(key, [""])[0]
-
-            # Построение конфига для прокси
             proxy: Dict[str, Any] = {
-                "name": country,
+                "name": proxy_name,
                 "type": "vless",
-                "server": server,
-                "port": port,
-                "uuid": uuid,
-                "network": get_first("type"),
-                "tls": get_first("security") == "tls",
-                "client-fingerprint": get_first("fp"),
-                "flow": get_first("flow")
+                "server": parsed.hostname,
+                "port": parsed.port,
+                "uuid": parsed.username,
+                "network": query_params.get("type", [""])[0],
+                "tls": query_params.get("security", [""])[0] == "tls",
+                "udp": True,
+                "client-fingerprint": query_params.get("fp", [""])[0],
+                "flow": query_params.get("flow", [""])[0]
             }
-
-            # Обработка ALPN
-            if alpn := get_first("alpn"):
+            if alpn := query_params.get("alpn", [""])[0]:
                 proxy["alpn"] = [a.strip() for a in alpn.split(",")]
-
-            # Удаление пустых значений
-            proxy = {k: v for k, v in proxy.items() if v not in [None, "", []]}
-
             proxies.append(proxy)
-            country_proxies[country].append(country)
-
         except Exception as e:
-            # Логирование ошибок в реальном приложении
+            print(f"Error parsing Hiddify config from URI: {uri}, error: {e}")
             continue
 
-    # Группировка прокси
-    if country_proxies:
-        # Группа "auto" для автоматического выбора
-        proxy_groups.append({
-            "name": "auto",
-            "type": "url-test",
-            "proxies": [c for c in country_proxies.keys()],
-            "url": "http://www.gstatic.com/generate_204",
-            "interval": 300
-        })
+    if proxies:
+        all_proxy_names = [p["name"] for p in proxies]
+        proxy_groups.extend([
+            {"name": "Auto ⚡️", "type": "url-test", "proxies": all_proxy_names,
+             "url": "http://www.gstatic.com/generate_204", "interval": 300},
+            {"name": "Select-Server", "type": "select", "proxies": ["Auto ⚡️"] + all_proxy_names}
+        ])
 
-        # Группы по странам
-        for country, names in country_proxies.items():
-            proxy_groups.append({
-                "name": country,
-                "type": "select",
-                "proxies": names
-            })
-
-    # Сборка финального конфига
     config = {
-        "name": "VPN_Quick",
+        # 'name' в теле дублируем, так как некоторые клиенты предпочитают его, а не заголовок
+        "name": f"🚀 {logo_name}",
         "proxies": proxies,
         "proxy-groups": proxy_groups,
-        "rules": ["MATCH,auto"]  # Стандартное правило
+        "rules": ["MATCH,Auto ⚡️"]
     }
 
-    return yaml.dump(config, allow_unicode=True, sort_keys=False)
+    # Добавляем стандартные поля для полной совместимости
+    standard_fields = "port: 7890\nsocks-port: 7891\nallow-lan: false\nmode: rule\nlog-level: info\n"
+    yaml_config = yaml.dump(config, allow_unicode=True, sort_keys=False)
+
+    return standard_fields + yaml_config

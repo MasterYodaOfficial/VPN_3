@@ -1,4 +1,4 @@
-from aiogram.types import InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from core.config import settings
 from database.models import Subscription, Tariff
@@ -6,6 +6,13 @@ from typing import List
 from database.crud.crud_tariff import get_active_tariffs
 
 
+
+def get_config_webapp_button(webapp_url: str) -> InlineKeyboardMarkup:
+    """Создает кнопку для открытия Web App с конфигурацией."""
+    buttons = [
+        [InlineKeyboardButton(text="📲 Получить конфигурацию", web_app=WebAppInfo(url=webapp_url))]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def profile_buttons(active_subscriptions_count: int, has_trial: bool) -> InlineKeyboardMarkup:
     """Кнопки для команды профайл"""
