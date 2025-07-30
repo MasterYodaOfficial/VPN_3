@@ -9,6 +9,7 @@ from bot.handlers.profile import (profile_command, get_action_profile, get_subsc
                                   get_payment_method_extend, get_tariff_extend, get_tariff_buy, get_payment_method_buy)
 from bot.handlers.referral import referral_command
 from bot.handlers.help import help_command, navigate_help_menu, show_install_guide
+from bot.handlers.for_admins import statistics, broadcast
 from aiogram.filters import Command
 from bot.utils.commands import start_bot
 from bot.utils.logger import logger
@@ -48,12 +49,20 @@ async def run_bot() -> None:
     dp.message.middleware(ThrottlingMiddleware(limit=1.5))
     dp.callback_query.middleware(ThrottlingMiddleware(limit=1.0))
 
-    # Команды
+    # Команды юзеров
     dp.message.register(start_command, Command('start'))
     dp.message.register(about_command, Command('about'))
     dp.message.register(profile_command, Command('profile'))
     dp.message.register(referral_command, Command('referral'))
     dp.message.register(help_command, Command('help'))
+
+    # Админки
+    dp.message.register(broadcast.broadcast_command, Command('broadcast'))
+    dp.message.register(statistics.admin_command, Command('admin'))
+    dp.callback_query.register(broadcast.broadcast_command, F.data == "admin_broadcast_start")
+    dp.message.register(broadcast.receive_broadcast_message, StepForm.WAITING_BROADCAST_MESSAGE)
+    dp.callback_query.register(broadcast.confirm_broadcast_handler, StepForm.CONFIRM_BROADCAST)
+    dp.callback_query.register(statistics.navigate_admin_panel, F.data.startswith("admin_stats:"))
 
 
     # Движения и Callbacks с /profile

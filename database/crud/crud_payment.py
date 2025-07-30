@@ -3,6 +3,9 @@ from database.models import Payment
 from database.enums import PaymentMethod
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy import func, and_
+from datetime import datetime, timedelta
+
 
 
 async def create_payment(
@@ -60,3 +63,25 @@ async def get_payment_by_id(session: AsyncSession, payment_id):
         .where(Payment.id == payment_id)
     )
     return result.scalars().first()
+
+
+async def get_revenue_for_period(session: AsyncSession, days: int = None) -> int:
+    """Считает доход за период (None = за все время)."""
+    stmt = select(func.sum(Payment.amount)).where(Payment.status == "success")
+    if days:
+        start_date = datetime.now() - timedelta(days=days)
+        stmt = stmt.where(Payment.created_at >= start_date)
+
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none() or 0
+
+
+async def count_successful_payments_for_period(session: AsyncSession, days: int = None) -> int:
+    """Считает количество успешных платежей за период."""
+    stmt = select(func.count(Payment.id)).where(Payment.status == "success")
+    if days:
+        start_date = datetime.now() - timedelta(days=days)
+        stmt = stmt.where(Payment.created_at >= start_date)
+
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none() or 0

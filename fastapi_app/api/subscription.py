@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.session import get_db_session
 from database.models import Subscription
-from database.crud.crud_subscription import get_subscription_with_configs_by_service_name
+from database.crud.crud_subscription import get_subscription_with_configs_by_access_key
 from fastapi_app.services.generator_subscriptions import generate_vless_list_for_happ
 from core.config import settings
 from fastapi_app.core.limiter import limiter
@@ -18,7 +18,7 @@ router = APIRouter()
 @router.get("/{sub_name}")
 @limiter.limit("10/minute")
 async def get_happ_compatible_subscription(
-        sub_name: str,
+        access_key: str,
         request: Request,
         session: AsyncSession = Depends(get_db_session)
 ):
@@ -26,7 +26,7 @@ async def get_happ_compatible_subscription(
     Отдает универсальную подписку, максимально совместимую с Happ.
     Метаданные передаются в заголовках, а тело - простой список VLESS-ссылок.
     """
-    subscription: Subscription = await get_subscription_with_configs_by_service_name(session, sub_name)
+    subscription: Subscription = await get_subscription_with_configs_by_access_key(session, access_key)
     if not subscription or not subscription.is_active:
         raise HTTPException(status_code=404, detail="Stop do that please =)")
 

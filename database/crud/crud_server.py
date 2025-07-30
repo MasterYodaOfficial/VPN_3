@@ -3,6 +3,7 @@ from sqlalchemy import select
 import json
 from database.session import get_session
 from database.models import Server
+from typing import List
 
 
 
@@ -62,3 +63,10 @@ async def load_servers_from_json(file_path: str):
 
         await session.commit()
 
+
+
+async def get_all_servers_with_load(session: AsyncSession) -> List[Server]:
+    """Возвращает все серверы с их нагрузкой."""
+    stmt = select(Server).order_by(Server.name)
+    result = await session.execute(stmt)
+    return result.scalars().all()

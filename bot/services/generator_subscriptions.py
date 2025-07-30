@@ -62,9 +62,10 @@ async def create_trial_sub(user_tg: User) -> Optional[Subscription]:
     Создает пробную подписку, конфиги на серверах и возвращает ОБЪЕКТ подписки.
     """
     async with get_session() as session:
+        user_db = await get_user_by_telegram_id(session, user_tg.id)
         subscription: Subscription = await create_subscription(
             session=session,
-            telegram_id=user_tg.id
+            user=user_db
         )
         servers: List[Server] = await get_least_loaded_servers(session)
         user_db = await get_user_by_telegram_id(session, user_tg.id)

@@ -3,7 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from database.models import User
 from core.config import settings
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, aliased
+from typing import List
+from sqlalchemy import func, and_
+from datetime import datetime, timedelta
 
 
 
@@ -49,3 +52,59 @@ async def create_user(
     await session.commit()
     await session.refresh(user)
     return user
+
+
+async def get_all_telegram_ids(session: AsyncSession) -> List[int]:
+    """Возвращает список всех telegram_id пользователей из базы данных."""
+    stmt = select(User.telegram_id)
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+async def is_admin(user: User) -> bool:
+    """Проверяет, является ли пользователь админом."""
+    return user.is_admin
+
+
+async def count_users(session: AsyncSession) -> int:
+    """Считает общее количество пользователей."""
+    result = await session.execute(select(func.count(User.telegram_id)))
+    return result.scalar_one()
+
+async def count_new_users_for_period(session: AsyncSession, days: int) -> int:
+    """Считает новых пользователей за последние N дней."""
+    start_date = datetime.now() - timedelta(days=days)
+    result = await session.execute(
+        select(func.count(User.telegram_id)).where(User.created_at >= start_date)
+    )
+    return result.scalar_one()
+
+
+async def get_top_referrers(session: AsyncSession, limit: int = 5) -> List[User]:
+    """Возвращает топ N пользователей по количеству приглашенных."""
+
+    # ---> ИСПРАВЛЕННАЯ ЛОГИКА ЗАПРОСА <---
+
+    # Создаем псевдоним (alias) для таблицы User, чтобы различать приглашающих и приглашенных
+    InvitedUser = aliased(User)
+
+    # Формируем запрос
+    stmt = (
+        select(
+            User,
+            func.count(InvitedUser.telegram_id).label('referral_count')
+        )
+        .outerjoin(InvitedUser, User.telegram_id == InvitedUser.inviter_id)
+        .group_by(User.telegram_id)
+        .order_by(func.count(InvitedUser.telegram_id).desc())
+        .limit(limit)
+    )
+
+    result = await session.execute(stmt)
+    # result теперь содержит кортежи (User, referral_count), нам нужен только User
+    top_users = [user for user, count in result.all()]
+
+    # Дополнительно загружаем relationship, чтобы в хендлере len(user.invited_users) работало
+    for user in top_users:
+        await session.refresh(user, ['invited_users'])
+
+    return top_users

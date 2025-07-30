@@ -45,7 +45,7 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
             await call.message.edit_text("⏳ Генерируем пробную подписку...")
             subscription = await create_trial_sub(call.from_user)
             if subscription:
-                subscription_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{subscription.service_name}"
+                subscription_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{subscription.access_key}"
                 await call.message.edit_text(
                     text=trial_message.format(
                         subscription_url=subscription_url,
@@ -80,7 +80,7 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
                 return
             subscriptions_text_list = []
             for sub in subs_list:
-                base_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{sub.service_name}"
+                base_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{sub.access_key}"
                 subscriptions_text_list.append(
                     f"<b>Подписка:</b> <code>{sub.service_name}</code>\n"
                     f"<b>Истекает:</b> {sub.end_date.strftime('%d.%m.%Y')}\n"
@@ -157,7 +157,7 @@ async def get_payment_method_extend(call: CallbackQuery, state: FSMContext):
                 await state.clear()
                 return
             current_state = await state.get_state()
-            if current_state != StepForm.CONFIRM_PAYMENT_EXTEND:
+            if current_state != StepForm.CONFIRM_PAYMENT_EXTEND or status == "failed":
                 await call.message.delete()
                 await call.message.answer("Оплата отменена")
                 logger.info(f"cancel {call.from_user.id}, {call.from_user.first_name}")
@@ -206,7 +206,7 @@ async def get_payment_method_buy(call: CallbackQuery, state: FSMContext):
                 await activate_subscription(subscription.id)
                 await confirm_payment_service(payment.id)
                 await call.message.delete()
-                subscription_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{subscription.service_name}"
+                subscription_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{subscription.access_key}"
                 await call.message.answer(
                     text=subscription_purchased_with_config_message.format(
                         tariff_name=tariff.name,
@@ -219,7 +219,7 @@ async def get_payment_method_buy(call: CallbackQuery, state: FSMContext):
                 await state.clear()
                 return
             current_state = await state.get_state()
-            if current_state != StepForm.CONFIRM_PAYMENT_EXTEND:
+            if current_state != StepForm.CONFIRM_PAYMENT_EXTEND or status == "failed":
                 await deactivate_only_subscription(subscription.id)
                 await call.message.delete()
                 await call.message.answer("Оплата отменена")
@@ -227,6 +227,9 @@ async def get_payment_method_buy(call: CallbackQuery, state: FSMContext):
                 await error_payment_service(payment.id)
                 return
             await asyncio.sleep(5)
+        await error_payment_service(payment.id)
+        await deactivate_only_subscription(subscription.id)
+        await state.clear()
+        return
     else:
         await call.message.delete()
-

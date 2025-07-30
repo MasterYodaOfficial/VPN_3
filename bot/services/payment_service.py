@@ -38,9 +38,10 @@ async def create_payment_service(
             if sub_id:
                 subscription: Subscription = await get_subscription_by_id(session, sub_id)
             else:
+                user_db = await get_user_by_telegram_id(session, user.id)
                 subscription: Subscription = await create_subscription(
                     session=session,
-                    telegram_id=user.id,
+                    user=user_db,
                     tariff_id=tariff_id
                 )
                 sub_id = subscription.id

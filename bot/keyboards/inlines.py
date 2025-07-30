@@ -113,3 +113,30 @@ def extend_subscription_button() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="🔁 Продлить сейчас", callback_data="profile:extend")
     return kb.as_markup()
+
+def broadcast_confirmation_buttons() -> InlineKeyboardMarkup:
+    """Кнопки для подтверждения или отмены рассылки."""
+    kb = InlineKeyboardBuilder()
+    kb.button(text="✅ Начать рассылку", callback_data="broadcast:start")
+    kb.button(text="❌ Отмена", callback_data="broadcast:cancel")
+    kb.adjust(2)
+    return kb.as_markup()
+
+
+def admin_panel_buttons() -> InlineKeyboardMarkup:
+    """Кнопки для главной панели администратора."""
+    kb = InlineKeyboardBuilder()
+    kb.button(text="📊 Общая сводка", callback_data="admin_stats:general")
+    kb.button(text="💰 Финансы", callback_data="admin_stats:finance")
+    kb.button(text="👥 Пользователи", callback_data="admin_stats:users")
+    kb.button(text="🚀 Подписки", callback_data="admin_stats:subs")
+    kb.button(text="🗣️ Рефералы", callback_data="admin_stats:referrals")
+    kb.button(text="🖥️ Состояние серверов", callback_data="admin_stats:servers")
+    kb.adjust(2, 2, 2, 1)
+    return kb.as_markup()
+
+def back_to_admin_panel_button() -> InlineKeyboardMarkup:
+    """Кнопка для возврата в главную админ-панель."""
+    kb = InlineKeyboardBuilder()
+    kb.button(text="⬅️ Назад в админ-панель", callback_data="admin_stats:back")
+    return kb.as_markup()

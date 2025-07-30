@@ -59,6 +59,7 @@ class Subscription(Base):
 
     service_name = Column(String, nullable=False)
     uuid_name = Column(String, nullable=False)
+    access_key = Column(String, unique=True, index=True, nullable=False)
 
     tariff_id = Column(Integer, ForeignKey("tariffs.id"), nullable=True)
 
