@@ -15,7 +15,7 @@ from fastapi_app.core.limiter import limiter
 router = APIRouter()
 
 
-@router.get("/{sub_name}")
+@router.get("/{access_key}")
 @limiter.limit("10/minute")
 async def get_happ_compatible_subscription(
         access_key: str,
