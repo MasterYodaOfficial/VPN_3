@@ -1,5 +1,5 @@
 from aiogram.types import User
-from database.models import Server, Subscription
+from database.models import Server, Subscription, Config
 from database.crud.crud_subscription import create_subscription, get_user_subscriptions, get_subscription_by_id
 from database.crud.crud_server import get_least_loaded_servers
 from database.crud.crud_config import create_config
@@ -8,7 +8,10 @@ from database.session import get_session
 from typing import List, Tuple, Optional
 from bot.utils.xui_api_deepseek import XUIHandler
 import asyncio
-from core.config import settings
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from datetime import datetime
+from bot.utils.logger import logger
 
 
 async def create_server_config(
@@ -40,7 +43,7 @@ async def create_server_config(
                 return config
             return None
     except Exception as e:
-        print(f"ERROR in create_server_config for {server.name}: {e}")
+        logger.error(f"ERROR in create_server_config for {server.name}: {e}")
         return None
 
 
@@ -50,11 +53,10 @@ async def del_server_config(handler: XUIHandler, uid: str) -> Tuple[bool, str]:
         async with handler:
             return await handler.delete_client_vless(uid), handler.panel_url
     except BaseException as ex:
-        print(f"ERROR in del_server_config: {ex}")
+        logger.error(f"ERROR in del_server_config: {ex}")
         return False, handler.panel_url
 
 
-# ---> ИЗМЕНЕНИЕ 1: Меняем тип возвращаемого значения с str | None на Optional[Subscription]
 async def create_trial_sub(user_tg: User) -> Optional[Subscription]:
     """
     Создает пробную подписку, конфиги на серверах и возвращает ОБЪЕКТ подписки.
@@ -79,7 +81,6 @@ async def create_trial_sub(user_tg: User) -> Optional[Subscription]:
         session.add_all(servers)
         await session.commit()
 
-        # ---> ИЗМЕНЕНИЕ 2: Возвращаем не строку, а сам объект подписки.
         return subscription
 
 
@@ -101,7 +102,6 @@ async def get_multiconfig_by_subscription(subscription_id: int) -> Optional[str]
         return "\n".join([config.config_data for config in subscription.configs])
 
 
-# ---> ИЗМЕНЕНИЕ 3: Меняем тип возвращаемого значения с str | None на Optional[Subscription]
 async def activate_subscription(sub_id: int) -> Optional[Subscription]:
     """
     Активирует купленную подписку, создает конфиги и возвращает ОБЪЕКТ подписки.
@@ -124,7 +124,6 @@ async def activate_subscription(sub_id: int) -> Optional[Subscription]:
         session.add_all(servers)
         await session.commit()
 
-        # ---> ИЗМЕНЕНИЕ 4: Возвращаем не строку, а сам объект подписки.
         return subscription
 
 
@@ -133,3 +132,73 @@ async def deactivate_only_subscription(sub_id: int):
         subscription: Subscription = await get_subscription_by_id(session, sub_id)
         subscription.is_active = False
         await session.commit()
+
+
+async def deactivate_expired_subscriptions():
+    """
+    Находит все просроченные подписки, деактивирует их, удаляет конфиги из БД
+    и удаляет клиентов из панелей 3x-ui.
+    """
+    logger.info("Scheduler: Запуск задачи по деактивации просроченных подписок...")
+    now = datetime.now()
+
+    async with get_session() as session:
+        # 1. Находим все активные подписки, у которых дата окончания уже прошла
+        stmt = (
+            select(Subscription)
+            .options(
+                selectinload(Subscription.configs).selectinload(Config.server)
+            )
+            .where(Subscription.end_date < now, Subscription.is_active == True)
+        )
+        result = await session.execute(stmt)
+        expired_subscriptions: List[Subscription] = result.scalars().all()
+
+        if not expired_subscriptions:
+            logger.info("Scheduler: Просроченные подписки не найдены.")
+            return
+
+        logger.info(f"Scheduler: Найдено {len(expired_subscriptions)} просроченных подписок для деактивации.")
+
+        # 2. Проходимся по каждой просроченной подписке
+        for sub in expired_subscriptions:
+            logger.info(f"Scheduler: Обработка подписки ID {sub.id} (UUID: {sub.uuid_name})")
+
+            # --- Удаление клиентов из панелей 3x-ui ---
+            # Собираем уникальные серверы, чтобы не создавать лишних подключений
+            servers_to_clean = {config.server for config in sub.configs if config.server}
+
+            tasks = []
+            for server in servers_to_clean:
+                try:
+                    handler = XUIHandler(
+                        panel_url=server.api_url,
+                        username=server.login,
+                        password=server.password
+                    )
+                    # Создаем асинхронную задачу на удаление клиента
+                    tasks.append(del_server_config(handler, sub.uuid_name))
+                except Exception as e:
+                    logger.error(f"Scheduler: Не удалось создать XUIHandler для сервера {server.name}: {e}")
+
+            # Выполняем все задачи на удаление параллельно
+            if tasks:
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                for res in results:
+                    if isinstance(res, Exception):
+                        logger.error(f"Scheduler: Ошибка при удалении клиента {sub.uuid_name} из панели: {res}")
+
+            # --- Обновление статуса в нашей БД ---
+            sub.is_active = False
+
+            # Удаляем связанные конфиги из нашей БД
+            # SQLAlchemy сделает это каскадно, но для явности можно сделать так:
+            for config in sub.configs:
+                await session.delete(config)
+
+            logger.info(f"Scheduler: Подписка ID {sub.id} успешно деактивирована.")
+
+        # Сохраняем все изменения в БД одним коммитом
+        await session.commit()
+
+    logger.info("Scheduler: Задача по деактивации просроченных подписок завершена.")

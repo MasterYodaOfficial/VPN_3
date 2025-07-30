@@ -25,6 +25,7 @@ class User(Base):
     referral_code = Column(String, unique=True, index=True)
     is_admin = Column(Boolean, default=False)
     has_trial = Column(Boolean, default=True)
+    had_first_purchase = Column(Boolean, default=False)
 
     # Связи
     subscriptions = relationship("Subscription", back_populates="user")

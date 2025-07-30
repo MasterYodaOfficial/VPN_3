@@ -22,7 +22,7 @@ def profile_buttons(active_subscriptions_count: int, has_trial: bool) -> InlineK
     kb.button(text="➕ Купить новую подписку", callback_data="profile:new_sub")
     if active_subscriptions_count > 0:
         kb.button(text="🔁 Продлить подписку", callback_data="profile:extend")
-        kb.button(text="⚙️ Получить действующий конфиг", callback_data="profile:get_conf")
+        kb.button(text="⚙️ Получить действующие конфиги", callback_data="profile:get_conf")
     kb.adjust(1)
     return kb.as_markup()
 
@@ -87,4 +87,29 @@ def tariff_buttons_buy(tariffs: List[Tariff]) -> InlineKeyboardMarkup:
             callback_data=f"buy_tariff:{tariff.id}"
         )
     kb.adjust(1)
+    return kb.as_markup()
+
+def help_menu_buttons() -> InlineKeyboardMarkup:
+    """Кнопки для главного меню /help."""
+    kb = InlineKeyboardBuilder()
+    kb.button(text="📱 Инструкции по установке", callback_data="help:install")
+    kb.button(text="❓ Частые вопросы (FAQ)", callback_data="help:faq")
+    kb.button(text="🗣️ Связаться с поддержкой", url=f"https://t.me/{settings.SUPPORT_NAME}")
+    kb.adjust(1)
+    return kb.as_markup()
+
+def install_menu_buttons() -> InlineKeyboardMarkup:
+    """Кнопки для выбора платформы в разделе инструкций."""
+    kb = InlineKeyboardBuilder()
+    kb.button(text="🤖 Android", callback_data="install:android")
+    kb.button(text="🍏 iOS", callback_data="install:ios")
+    kb.button(text="💻 Windows / macOS", callback_data="install:desktop")
+    kb.button(text="⬅️ Назад в меню помощи", callback_data="install:back_to_help")
+    kb.adjust(1)
+    return kb.as_markup()
+
+def extend_subscription_button() -> InlineKeyboardMarkup:
+    """Кнопка, ведущая в меню продления подписки."""
+    kb = InlineKeyboardBuilder()
+    kb.button(text="🔁 Продлить сейчас", callback_data="profile:extend")
     return kb.as_markup()

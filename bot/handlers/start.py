@@ -1,7 +1,7 @@
 from aiogram.types import Message, FSInputFile
 from aiogram.fsm.context import FSMContext
 from bot.services.user_service import register_user_service
-from bot.utils.messages import start_message, trial_message
+from bot.utils.messages import start_message, first_trial_message
 from bot.utils.logger import logger
 from core.config import settings
 
@@ -24,5 +24,5 @@ async def start_command(message: Message, state: FSMContext):
         )
     )
     if user_db.has_trial and settings.TRIAL_DAYS > 0: # Если есть промо период в боте, будет сообщение.
-        await message.answer(trial_message)
+        await message.answer(first_trial_message)
     await state.clear()

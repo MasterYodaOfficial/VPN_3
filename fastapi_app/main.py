@@ -1,22 +1,26 @@
-# fastapi_app/main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from slowapi import _rate_limit_exceeded_handler
+
+from slowapi.errors import RateLimitExceeded
+
 from fastapi_app.api import subscription as api_router
-from fastapi_app.routers import frontend as frontend_router
+from fastapi_app.core.limiter import limiter
+
 
 
 app = FastAPI(
-    docs_url=None,           # отключает Swagger UI
-    redoc_url=None,          # отключает ReDoc
+    docs_url=None,
+    redoc_url=None,
     openapi_url=None,
-    title="VPN Subscription Service"   # отключает OpenAPI спецификацию
+    title="VPN Subscription Service"
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Подключаем роутер для API
+
 app.include_router(api_router.router, prefix="/api/v1/subscription", tags=["Subscription"])
 
-# Подключаем роутер для фронтенда
-app.include_router(frontend_router.router)
-
 @app.get("/")
-def read_root():
-    return {"message": "API is running"}
+@limiter.limit("10/minute")
+def read_root(request: Request):
+    return {"message": "Hi, don't hack me please, I,m the bad coder =)"}

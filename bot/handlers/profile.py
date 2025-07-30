@@ -1,8 +1,8 @@
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
-from bot.utils.messages import (profile_message, choose_subscription_text, choose_payment_message,
+from bot.utils.messages import (profile_message, choose_subscription_text_extend, choose_payment_message,
                                 choose_tariff_message, payment_message, subscription_renewed_message,
-                                subscription_purchased_with_config_message, trial_message)
+                                subscription_purchased_with_config_message, trial_message, active_configs_list_message)
 from bot.utils.logger import logger
 from bot.services.user_service import register_user_service
 from bot.keyboards.inlines import (profile_buttons, active_subscriptions_buttons, payments_buttons,
@@ -41,19 +41,14 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
     logger.info(f"{call.from_user.id}, {call.from_user.first_name}")
     if call.data.startswith("profile"):
         _, profile_action = call.data.split(":")
-        if profile_action == "trial": # sub_name, hiddify_url, happ_url, logo_name
-            await call.message.edit_text("Генерируем...")
+        if profile_action == "trial":
+            await call.message.edit_text("⏳ Генерируем пробную подписку...")
             subscription = await create_trial_sub(call.from_user)
             if subscription:
-                # Формируем две разные ссылки
-                base_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{subscription.service_name}"
-                hiddify_url = f"{base_url}?client=hiddify"
-                happ_url = f"{base_url}?client=happ"
-
+                subscription_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{subscription.service_name}"
                 await call.message.edit_text(
                     text=trial_message.format(
-                        hiddify_url=hiddify_url,
-                        happ_url=happ_url,
+                        subscription_url=subscription_url,
                         logo_name=settings.LOGO_NAME
                     ),
                     disable_web_page_preview=True
@@ -71,12 +66,33 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
         if profile_action == "extend":
             subs_list = await get_active_user_subscription(call.from_user)
             await call.message.edit_text(
-                text=choose_subscription_text,
+                text=choose_subscription_text_extend,
                 reply_markup=active_subscriptions_buttons(subs_list)
             )
             await state.set_state(StepForm.CHOOSE_EXTEND_SUBSCRIPTION)
         if profile_action == "get_conf":
-            pass
+            subs_list = await get_active_user_subscription(call.from_user)
+            if not subs_list:
+                await call.message.edit_text(
+                    text="У вас нет активных подписок"
+                )
+                await state.clear()
+                return
+            subscriptions_text_list = []
+            for sub in subs_list:
+                base_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{sub.service_name}"
+                subscriptions_text_list.append(
+                    f"<b>Подписка:</b> <code>{sub.service_name}</code>\n"
+                    f"<b>Истекает:</b> {sub.end_date.strftime('%d.%m.%Y')}\n"
+                    f"<b>Ссылка:</b> <code>{base_url}</code>\n"
+                )
+
+            final_text = active_configs_list_message.format(
+                subscriptions_list="\n".join(subscriptions_text_list)
+            )
+            await call.message.edit_text(text=final_text, disable_web_page_preview=True)
+            await state.clear()
+            return
     else:
         await call.message.delete()
 
@@ -187,22 +203,15 @@ async def get_payment_method_buy(call: CallbackQuery, state: FSMContext):
         while time.time() < timeout:
             status = await get_payment_status(payment)
             if status == "paid":
-                # В этом блоке:
-                await activate_subscription(subscription.id)  # Эта функция должна возвращать объект подписки
+                await activate_subscription(subscription.id)
                 await confirm_payment_service(payment.id)
                 await call.message.delete()
-
-                # Формируем две разные ссылки
-                base_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{subscription.service_name}"
-                hiddify_url = f"{base_url}?client=hiddify"
-                happ_url = f"{base_url}?client=happ"
-
-                await call.message.answer(  # tariff_name, sub_name, hiddify_url, happ_url, logo_name
+                subscription_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{subscription.service_name}"
+                await call.message.answer(
                     text=subscription_purchased_with_config_message.format(
                         tariff_name=tariff.name,
                         sub_name=subscription.service_name,
-                        hiddify_url=hiddify_url,
-                        happ_url=happ_url,
+                        subscription_url=subscription_url,
                         logo_name=settings.LOGO_NAME
                     ),
                     disable_web_page_preview=True
@@ -220,3 +229,4 @@ async def get_payment_method_buy(call: CallbackQuery, state: FSMContext):
             await asyncio.sleep(5)
     else:
         await call.message.delete()
+

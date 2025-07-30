@@ -21,7 +21,9 @@ class StepForm(StatesGroup):
     SELECT_TARIFF_BUY = State()       # Выбор нового тарифа
     PAYMENT_METHOD_BUY = State()  # Выбор способа оплаты нового тарифа
 
-
+    # Админская рассылка
+    WAITING_BROADCAST_MESSAGE = State() # Ожидание сообщения от админа
+    CONFIRM_BROADCAST = State()         # Ожидание подтверждения рассылки
 
     # Подписка
     # SELECT_TARIFF = State()       # Выбор тарифа

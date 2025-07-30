@@ -33,7 +33,7 @@ async def create_subscription(
         tariff = result.scalar_one_or_none()
         if not tariff:
             raise ValueError("Тариф не найден")
-        end_date = start_date + timedelta(days=tariff.duration_days)
+        end_date = start_date
     else:
         end_date = start_date + timedelta(days=settings.TRIAL_DAYS)
 
