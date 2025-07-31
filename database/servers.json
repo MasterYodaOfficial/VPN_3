@@ -1,6 +1,6 @@
 [
   {
-    "name": "Швеция",
+    "name": "\uD83C\uDDF8\uD83C\uDDEAШвеция",
     "api_url": "https://serv1.myquickcloud.ru:40771/24l6Jo2YjXSjyCH/",
     "link_ip": "83.219.250.202",
     "login": "RoWaVjRRw5",
@@ -10,11 +10,21 @@
     "is_active": true
   },
   {
-    "name": "Франция",
+    "name": "\uD83C\uDDEB\uD83C\uDDEEФинляндия",
     "api_url": "https://serv2.myquickcloud.ru:14445/Zp7B4tpK7xKRlTY/",
     "link_ip": "93.123.30.241",
     "login": "ca3Muv3SiD",
     "password": "zEhtE5ODKS",
+    "max_clients": 100,
+    "current_clients": 0,
+    "is_active": true
+  },
+    {
+    "name": "\uD83C\uDDEB\uD83C\uDDF7Франция",
+    "api_url": "https://s3.myquickcloud.ru:26498/DFHYcUcXjPBp9MU4NA/",
+    "link_ip": "188.92.28.35",
+    "login": "d9a23175",
+    "password": "7062de95",
     "max_clients": 100,
     "current_clients": 0,
     "is_active": true

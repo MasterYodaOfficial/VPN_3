@@ -12,6 +12,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from datetime import datetime
 from bot.utils.logger import logger
+from aiogram import Bot
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
+from bot.utils.messages import subscription_deactivated_message
+from database.crud.crud_server import get_all_servers_with_load
+
 
 
 async def create_server_config(
@@ -135,10 +140,10 @@ async def deactivate_only_subscription(sub_id: int):
         await session.commit()
 
 
-async def deactivate_expired_subscriptions():
+async def deactivate_expired_subscriptions(bot: Bot):
     """
     Находит все просроченные подписки, деактивирует их, удаляет конфиги из БД
-    и удаляет клиентов из панелей 3x-ui.
+    и удаляет клиентов из панелей 3x-ui. Сообщение пользователю.
     """
     logger.info("Scheduler: Запуск задачи по деактивации просроченных подписок...")
     now = datetime.now()
@@ -164,6 +169,16 @@ async def deactivate_expired_subscriptions():
         # 2. Проходимся по каждой просроченной подписке
         for sub in expired_subscriptions:
             logger.info(f"Scheduler: Обработка подписки ID {sub.id} (UUID: {sub.uuid_name})")
+            try:
+                await bot.send_message(
+                    chat_id=sub.user.telegram_id,
+                    text=subscription_deactivated_message.format(sub_name=sub.service_name)
+                )
+                await asyncio.sleep(0.1) # Небольшая задержка
+            except (TelegramBadRequest, TelegramForbiddenError):
+                logger.warning(f"Scheduler: Не удалось отправить уведомление о деактивации пользователю {sub.user.telegram_id} (заблокировал бота).")
+            except Exception as e:
+                logger.error(f"Scheduler: Ошибка при отправке уведомления о деактивации: {e}")
 
             # --- Удаление клиентов из панелей 3x-ui ---
             # Собираем уникальные серверы, чтобы не создавать лишних подключений
@@ -203,3 +218,60 @@ async def deactivate_expired_subscriptions():
         await session.commit()
 
     logger.info("Scheduler: Задача по деактивации просроченных подписок завершена.")
+
+
+async def update_servers_load_statistics():
+    """
+    Проходит по всем серверам в БД, подключается к их панелям 3x-ui,
+    собирает статистику по активным клиентам и обновляет поле 'current_clients'.
+    """
+    logger.info("Scheduler: Запуск задачи по обновлению статистики нагрузки серверов...")
+
+    async with get_session() as session:
+        # 1. Получаем список всех наших серверов из БД
+        all_servers: List[Server] = await get_all_servers_with_load(session)
+        if not all_servers:
+            logger.warning("Scheduler: Серверы в базе данных не найдены. Обновление статистики отменено.")
+            return
+
+        total_updated_servers = 0
+        # 2. Проходим по каждому серверу
+        for server in all_servers:
+            if not server.is_active:
+                continue
+
+            try:
+                # 3. Подключаемся к панели и получаем статистику
+                handler = XUIHandler(
+                    panel_url=server.api_url,
+                    username=server.login,
+                    password=server.password
+                )
+                async with handler:
+                    inbounds_data = await handler.get_all_inbounds_with_client_stats()
+
+                if inbounds_data is None:
+                    logger.error(f"Scheduler: Не удалось получить статистику для сервера {server.name}.")
+                    continue
+
+                # 4. Считаем количество активных клиентов на этой панели
+                active_clients_count = 0
+                for inbound in inbounds_data:
+                    # Убедимся, что clientStats это список
+                    client_stats = inbound.get("clientStats")
+                    if isinstance(client_stats, list):
+                        # Считаем только включенных ('enable': true) клиентов
+                        active_clients_count += sum(1 for client in client_stats if client.get("enable"))
+
+                # 5. Обновляем значение в нашей БД
+                server.current_clients = active_clients_count
+                total_updated_servers += 1
+                logger.info(f"Scheduler: Сервер '{server.name}' обновлен. Нагрузка: {active_clients_count} клиентов.")
+
+            except Exception as e:
+                logger.error(f"Scheduler: Непредвиденная ошибка при обработке сервера {server.name}: {e}")
+
+        # Сохраняем все изменения в БД одним коммитом
+        await session.commit()
+
+    logger.info(f"Scheduler: Задача по обновлению статистики завершена. Обновлено {total_updated_servers} серверов.")

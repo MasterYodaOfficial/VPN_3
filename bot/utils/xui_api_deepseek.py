@@ -5,7 +5,7 @@ import urllib.parse
 import aiohttp
 import random
 import string
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from bot.utils.logger import logger
 
 
@@ -158,6 +158,24 @@ class XUIHandler:
             logger.error(f"Error deleting client: {str(ex)}")
             return False
 
+    async def get_all_inbounds_with_client_stats(self) -> Optional[List[Dict]]:
+        """
+        Асинхронно получает список всех инбаундов с полной статистикой по клиентам.
+        Возвращает список объектов инбаундов из поля 'obj'.
+        """
+        try:
+            async with self.session.get(f"{self.panel_url}/panel/api/inbounds/list") as response:
+                response.raise_for_status()
+                data = await response.json()
+                if data and data.get("success"):
+                    # Возвращаем только список объектов, как в документации
+                    return data.get("obj", [])
+                else:
+                    logger.error(f"API панели {self.panel_url} вернуло ошибку: {data.get('msg')}")
+                    return None
+        except (aiohttp.ClientError, json.JSONDecodeError) as ex:
+            logger.error(f"Ошибка при получении статистики с панели {self.panel_url}: {str(ex)}")
+            return None
 
     @staticmethod
     def generate_random_string(length=10):

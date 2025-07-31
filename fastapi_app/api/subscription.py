@@ -42,7 +42,7 @@ async def get_happ_compatible_subscription(
         'profile-title': f"base64:{profile_title_b64}",
         'subscription-userinfo': f'upload=0; download=0; total=109951162777600; expire={int(subscription.end_date.timestamp())}',
         'support-url': settings.SUPPORT_URL,
-        'profile-update-interval': '24'
+        'profile-update-interval': '12'
     }
 
     # --- ГОТОВИМ ТЕЛО ОТВЕТА (ПРОСТОЙ СПИСОК ССЫЛОК) ---

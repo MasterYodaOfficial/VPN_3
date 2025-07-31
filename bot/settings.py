@@ -14,7 +14,7 @@ from aiogram.filters import Command
 from bot.utils.commands import start_bot
 from bot.utils.logger import logger
 from bot.utils.throttling import ThrottlingMiddleware
-from bot.services.generator_subscriptions import deactivate_expired_subscriptions
+from bot.services.generator_subscriptions import deactivate_expired_subscriptions, update_servers_load_statistics
 from bot.services.payment_service import send_expiration_warnings
 from bot.utils.statesforms import StepForm
 from database.crud.crud_tariff import load_tariffs_from_json
@@ -87,6 +87,7 @@ async def run_bot() -> None:
     scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
     scheduler.add_job(deactivate_expired_subscriptions, 'cron', hour=2, minute=0) # Удаление конфигов
     scheduler.add_job(send_expiration_warnings, 'cron', hour=11, minute=0, args=[bot]) # Уведомление с просьбой оплатить
+    scheduler.add_job(update_servers_load_statistics, 'interval', hours=1) # Активные пользователи каждый час
     scheduler.start()
 
     logger.info("Инициализация бота выполнена, старт...")
