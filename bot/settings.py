@@ -85,7 +85,7 @@ async def run_bot() -> None:
 
     # --- Настройка и запуск планировщиков ---
     scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
-    scheduler.add_job(deactivate_expired_subscriptions, 'cron', hour=2, minute=0) # Удаление конфигов
+    scheduler.add_job(deactivate_expired_subscriptions, 'cron', hour=2, minute=0, args=[bot]) # Удаление конфигов
     scheduler.add_job(send_expiration_warnings, 'cron', hour=11, minute=0, args=[bot]) # Уведомление с просьбой оплатить
     scheduler.add_job(update_servers_load_statistics, 'interval', hours=1) # Активные пользователи каждый час
     scheduler.start()
