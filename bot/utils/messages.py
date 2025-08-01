@@ -244,7 +244,7 @@ help_android_vless = """
 
 1️⃣ <b>Скопируйте универсальную ссылку</b> на подписку, которую вы получили после оплаты или в разделе "Получить конфиги".
 
-2️⃣ <b>Установите удобное для вас:</b>
+2️⃣ <b>Установите удобное для вас приложение:</b>
    • <a href="https://play.google.com/store/apps/details?id=app.hiddify.com"><b>Hiddify</b></a>
    • <a href="https://play.google.com/store/apps/details?id=com.happproxy"><b>Happ</b></a>
    • <a href="https://play.google.com/store/apps/details?id=com.v2raytun.android"><b>v2RayTun</b></a>
@@ -262,7 +262,7 @@ help_ios_vless = """
 
 1️⃣ <b>Скопируйте универсальную ссылку</b> на подписку, которую вы получили после оплаты или в разделе "Получить конфиги".
 
-2️⃣ <b>Установите удобное для вас:</b>
+2️⃣ <b>Установите удобное для вас приложение:</b>
    • <a href="https://apps.apple.com/ru/app/v2raytun/id6476628951"><b>v2RayTun</b></a>
    • <a href="https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532"><b>Hiddify</b></a>
    • <a href="https://apps.apple.com/us/app/happ-proxy-utility/id6504287215"><b>Happ</b></a>
