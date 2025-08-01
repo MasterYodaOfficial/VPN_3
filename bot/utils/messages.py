@@ -168,10 +168,12 @@ trial_message = """
 ---
 <b>Что делать дальше?</b>
 
-1️⃣ <b>Установите приложение Hiddify или Happ:</b>
- • <a href="https://play.google.com/store/apps/details?id=com.happproxy"><b>Happ</b> для Android</a>
- • <a href="https://apps.apple.com/us/app/happ-proxy-utility/id6504287215"><b>Happ</b> для iOS</a>
+1️⃣ <b>Установите удобное для вас приложение:</b>
+ • <a href="https://play.google.com/store/apps/details?id=com.happproxy"><b>Happ</b> для Android и AndroidTV</a>
  • <a href="https://play.google.com/store/apps/details?id=app.hiddify.com"><b>Hiddify</b> для Android</a>
+ • <a href="https://play.google.com/store/apps/details?id=com.v2raytun.android"><b>v2RayTun</b> для Android</a>
+ • <a href="https://apps.apple.com/ru/app/v2raytun/id6476628951"><b>v2RayTun</b> для iOS</a>
+ • <a href="https://apps.apple.com/us/app/happ-proxy-utility/id6504287215"><b>Happ</b> для iOS</a>
  • <a href="https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532"><b>Hiddify</b> для iOS</a>
 
 2️⃣ <b>Добавьте подписку:</b>
@@ -196,10 +198,12 @@ subscription_purchased_with_config_message = """
 ---
 <b>Что делать дальше?</b>
 
-1️⃣ <b>Установите приложение Hiddify или Happ:</b>
- • <a href="https://play.google.com/store/apps/details?id=com.happproxy"><b>Happ</b> для Android</a>
- • <a href="https://apps.apple.com/us/app/happ-proxy-utility/id6504287215"><b>Happ</b> для iOS</a>
+1️⃣ <b>Установите удобное для вас приложение:</b>
+ • <a href="https://play.google.com/store/apps/details?id=com.happproxy"><b>Happ</b> для Android и AndroidTV</a>
  • <a href="https://play.google.com/store/apps/details?id=app.hiddify.com"><b>Hiddify</b> для Android</a>
+ • <a href="https://play.google.com/store/apps/details?id=com.v2raytun.android"><b>v2RayTun</b> для Android</a>
+ • <a href="https://apps.apple.com/ru/app/v2raytun/id6476628951"><b>v2RayTun</b> для iOS</a>
+ • <a href="https://apps.apple.com/us/app/happ-proxy-utility/id6504287215"><b>Happ</b> для iOS</a>
  • <a href="https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532"><b>Hiddify</b> для iOS</a>
 
 2️⃣ <b>Добавьте подписку:</b>
@@ -240,9 +244,10 @@ help_android_vless = """
 
 1️⃣ <b>Скопируйте универсальную ссылку</b> на подписку, которую вы получили после оплаты или в разделе "Получить конфиги".
 
-2️⃣ <b>Установите одно из приложений:</b>
+2️⃣ <b>Установите удобное для вас:</b>
    • <a href="https://play.google.com/store/apps/details?id=app.hiddify.com"><b>Hiddify</b></a>
    • <a href="https://play.google.com/store/apps/details?id=com.happproxy"><b>Happ</b></a>
+   • <a href="https://play.google.com/store/apps/details?id=com.v2raytun.android"><b>v2RayTun</b></a>
 
 3️⃣ <b>Добавьте подписку:</b>
  • Откройте установленное приложение.
@@ -257,8 +262,9 @@ help_ios_vless = """
 
 1️⃣ <b>Скопируйте универсальную ссылку</b> на подписку, которую вы получили после оплаты или в разделе "Получить конфиги".
 
-2️⃣ <b>Установите одно из приложений:</b>
-   • <a href="https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532"><b>Hiddify</b> (рекомендуется)</a>
+2️⃣ <b>Установите удобное для вас:</b>
+   • <a href="https://apps.apple.com/ru/app/v2raytun/id6476628951"><b>v2RayTun</b></a>
+   • <a href="https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532"><b>Hiddify</b></a>
    • <a href="https://apps.apple.com/us/app/happ-proxy-utility/id6504287215"><b>Happ</b></a>
 
 3️⃣ <b>Добавьте подписку:</b>

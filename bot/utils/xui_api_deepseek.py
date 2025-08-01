@@ -83,7 +83,7 @@ class XUIHandler:
                 "id": uid,
                 "flow": "xtls-rprx-vision",
                 "email": email,
-                "limitIp": 0,
+                "limitIp": 3,
                 "totalGB": 0,
                 "expiryTime": 0,
                 "enable": True,

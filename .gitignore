@@ -5,3 +5,8 @@ logs/
 *.pyc
 /db.sqlite3
 /database/servers.json
+/migrate_data.py
+/data_vpn.db
+/migrate_subscriptions.py
+/fix_migration.py
+/env
