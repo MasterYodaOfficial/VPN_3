@@ -33,6 +33,7 @@ async def create_user(
     session: AsyncSession,
     telegram_id: int,
     username: Optional[str] = None,
+    link: Optional[str] = None,
     inviter_id: Optional[int] = None,
     referral_code: Optional[str] = None,
     has_trial: bool = True

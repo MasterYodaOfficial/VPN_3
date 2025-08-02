@@ -18,10 +18,25 @@ async def register_user_service(
     async with get_session() as session:
         telegram_id = message.from_user.id
         username = message.from_user.first_name
+        user_from_tg = message.from_user
 
         # Проверяем, есть ли пользователь в базе
         user = await get_user_by_telegram_id(session, telegram_id)
         if user:
+            # ---> ЛОГИКА ОБНОВЛЕНИЯ ДЛЯ СУЩЕСТВУЮЩЕГО ПОЛЬЗОВАТЕЛЯ <---
+            should_commit = False
+            # Обновляем first_name, если он изменился
+            if user.username != user_from_tg.first_name:
+                user.username = user_from_tg.first_name
+                should_commit = True
+            # Обновляем @username (link), если он изменился
+            if user.link != user_from_tg.username:
+                user.link = user_from_tg.username
+                should_commit = True
+
+            if should_commit:
+                await session.commit()
+
             return user
 
         inviter_id = None
@@ -42,6 +57,7 @@ async def register_user_service(
             session=session,
             telegram_id=telegram_id,
             username=username,
+            link=user_from_tg.username,
             inviter_id=inviter_id,
             referral_code=new_referral_code
         )

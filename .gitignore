@@ -10,3 +10,4 @@ logs/
 /migrate_subscriptions.py
 /fix_migration.py
 /env
+/dataview/

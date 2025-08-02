@@ -142,23 +142,28 @@ async def deactivate_only_subscription(sub_id: int):
 
 async def deactivate_expired_subscriptions(bot: Bot):
     """
-    Находит все просроченные подписки, деактивирует их, удаляет конфиги из БД
-    и удаляет клиентов из панелей 3x-ui. Сообщение пользователю.
+    Находит все просроченные подписки, уведомляет пользователей,
+    деактивирует их в БД и удаляет клиентов из панелей 3x-ui.
     """
     logger.info("Scheduler: Запуск задачи по деактивации просроченных подписок...")
     now = datetime.now()
 
     async with get_session() as session:
-        # 1. Находим все активные подписки, у которых дата окончания уже прошла
+        # 1. Находим все активные подписки, у которых дата окончания уже прошла,
+        #    и СРАЗУ ЖЕ ("жадно") подгружаем все связанные данные.
         stmt = (
             select(Subscription)
             .options(
-                selectinload(Subscription.configs).selectinload(Config.server)
+                # Подгружаем связанные конфиги, а для каждого конфига - связанный сервер
+                selectinload(Subscription.configs).selectinload(Config.server),
+                # Подгружаем связанного пользователя, чтобы знать его telegram_id
+                selectinload(Subscription.user)
             )
             .where(Subscription.end_date < now, Subscription.is_active == True)
         )
         result = await session.execute(stmt)
-        expired_subscriptions: List[Subscription] = result.scalars().all()
+        # .unique() нужен для избежания дубликатов из-за JOIN'ов при "жадной" загрузке
+        expired_subscriptions: List[Subscription] = result.scalars().unique().all()
 
         if not expired_subscriptions:
             logger.info("Scheduler: Просроченные подписки не найдены.")
@@ -168,22 +173,12 @@ async def deactivate_expired_subscriptions(bot: Bot):
 
         # 2. Проходимся по каждой просроченной подписке
         for sub in expired_subscriptions:
-            logger.info(f"Scheduler: Обработка подписки ID {sub.id} (UUID: {sub.uuid_name})")
-            try:
-                await bot.send_message(
-                    chat_id=sub.user.telegram_id,
-                    text=subscription_deactivated_message.format(sub_name=sub.service_name)
-                )
-                await asyncio.sleep(0.1) # Небольшая задержка
-            except (TelegramBadRequest, TelegramForbiddenError):
-                logger.warning(f"Scheduler: Не удалось отправить уведомление о деактивации пользователю {sub.user.telegram_id} (заблокировал бота).")
-            except Exception as e:
-                logger.error(f"Scheduler: Ошибка при отправке уведомления о деактивации: {e}")
+            # Теперь доступ к sub.user и sub.configs.server полностью безопасен и не вызовет ошибку
+            logger.info(
+                f"Scheduler: Обработка подписки ID {sub.id} (UUID: {sub.uuid_name}) для пользователя {sub.user.telegram_id}")
 
             # --- Удаление клиентов из панелей 3x-ui ---
-            # Собираем уникальные серверы, чтобы не создавать лишних подключений
             servers_to_clean = {config.server for config in sub.configs if config.server}
-
             tasks = []
             for server in servers_to_clean:
                 try:
@@ -192,12 +187,10 @@ async def deactivate_expired_subscriptions(bot: Bot):
                         username=server.login,
                         password=server.password
                     )
-                    # Создаем асинхронную задачу на удаление клиента
                     tasks.append(del_server_config(handler, sub.uuid_name))
                 except Exception as e:
                     logger.error(f"Scheduler: Не удалось создать XUIHandler для сервера {server.name}: {e}")
 
-            # Выполняем все задачи на удаление параллельно
             if tasks:
                 results = await asyncio.gather(*tasks, return_exceptions=True)
                 for res in results:
@@ -206,15 +199,22 @@ async def deactivate_expired_subscriptions(bot: Bot):
 
             # --- Обновление статуса в нашей БД ---
             sub.is_active = False
+            logger.info(f"Scheduler: Подписка ID {sub.id} помечена как неактивная.")
 
-            # Удаляем связанные конфиги из нашей БД
-            # SQLAlchemy сделает это каскадно, но для явности можно сделать так:
-            for config in sub.configs:
-                await session.delete(config)
+            # --- Отправляем уведомление пользователю ПОСЛЕ успешной деактивации ---
+            try:
+                await bot.send_message(
+                    chat_id=sub.user.telegram_id,
+                    text=subscription_deactivated_message.format(sub_name=sub.service_name)
+                )
+                await asyncio.sleep(0.1)
+            except (TelegramBadRequest, TelegramForbiddenError):
+                logger.warning(
+                    f"Scheduler: Не удалось отправить уведомление о деактивации пользователю {sub.user.telegram_id} (заблокировал бота).")
+            except Exception as e:
+                logger.error(f"Scheduler: Ошибка при отправке уведомления о деактивации: {e}")
 
-            logger.info(f"Scheduler: Подписка ID {sub.id} успешно деактивирована.")
-
-        # Сохраняем все изменения в БД одним коммитом
+        # Сохраняем все изменения (установку is_active = False) в БД одним коммитом
         await session.commit()
 
     logger.info("Scheduler: Задача по деактивации просроченных подписок завершена.")
