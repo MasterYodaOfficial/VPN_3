@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from database.models import Payment
+from database.models import Payment, User
 from database.enums import PaymentMethod
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -49,20 +49,26 @@ async def create_payment(
     return payment
 
 
-async def get_payment_by_id(session: AsyncSession, payment_id):
+async def get_payment_by_id(session: AsyncSession, payment_id: int) -> Payment | None:
     """
-    Получает платеж из БД по его id
-    :param session:
-    :param payment_id:
-    :return: Payment из БД
+    Получает платеж из БД по его ID, сразу же "жадно" подгружая все
+    необходимые связанные данные (подписку, тариф, пользователя и его пригласившего).
     """
-    result = await session.execute(
+    stmt = (
         select(Payment)
-        .options(selectinload(Payment.subscription))
-        .options(selectinload(Payment.tariff))
+        .options(
+            selectinload(Payment.subscription),
+            selectinload(Payment.tariff),
+            # Подгружаем пользователя, который совершил платеж
+            selectinload(Payment.user).options(
+                # А для этого пользователя сразу подгружаем того, кто его пригласил
+                selectinload(User.inviter)
+            )
+        )
         .where(Payment.id == payment_id)
     )
-    return result.scalars().first()
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def get_revenue_for_period(session: AsyncSession, days: int = None) -> int:
