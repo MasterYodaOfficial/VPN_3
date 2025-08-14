@@ -91,3 +91,22 @@ async def count_successful_payments_for_period(session: AsyncSession, days: int 
 
     result = await session.execute(stmt)
     return result.scalar_one_or_none() or 0
+
+
+async def get_payment_by_external_id(session: AsyncSession, external_id: str) -> Payment | None:
+    """
+    Находит платеж по внешнему ID, подгружая все связанные данные.
+    """
+    stmt = (
+        select(Payment)
+        .options(
+            selectinload(Payment.subscription),
+            selectinload(Payment.tariff),
+            selectinload(Payment.user).options(
+                selectinload(User.inviter)
+            )
+        )
+        .where(Payment.external_payment_id == external_id)
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()

@@ -2,10 +2,10 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from database.models import User
-from core.config import settings
+from app.core.config import settings
 from sqlalchemy.orm import selectinload, aliased
 from typing import List
-from sqlalchemy import func, and_
+from sqlalchemy import func
 from datetime import datetime, timedelta
 
 

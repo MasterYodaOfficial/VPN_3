@@ -9,21 +9,21 @@
   {
     "name": "3 месяца",
     "duration_days": 90,
-    "price": 400,
+    "price": 420,
     "currency": "RUB",
     "is_active": true
   },
   {
     "name": "6 месяцев",
     "duration_days": 180,
-    "price": 750,
+    "price": 770,
     "currency": "RUB",
     "is_active": true
   },
   {
     "name": "1 год",
     "duration_days": 365,
-    "price": 1500,
+    "price": 1600,
     "currency": "RUB",
     "is_active": true
   }

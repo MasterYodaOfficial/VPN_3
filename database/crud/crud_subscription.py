@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from database.models import Subscription, Tariff, User
 from typing import Optional, List
-from core.config import settings
+from app.core.config import settings
 from sqlalchemy.orm import selectinload
 import secrets
 
