@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from database.models import Subscription, Tariff, User
 from typing import Optional, List
-from core.config import settings
+from app.core.config import settings
 from sqlalchemy.orm import selectinload
 import secrets
 
@@ -33,7 +33,8 @@ async def create_subscription(
     user: User,
     tariff_id: int = None,
     uuid_name: str = None,
-    promo_id: Optional[int] = None
+    promo_id: Optional[int] = None,
+    is_active_status: bool = True
 ) -> Subscription:
     start_date = datetime.now()
     if tariff_id:
@@ -51,7 +52,7 @@ async def create_subscription(
         telegram_id=user.telegram_id,
         start_date=start_date,
         end_date=end_date,
-        is_active=True,
+        is_active=is_active_status,
         service_name=generate_service_name(user),
         access_key=generate_access_key(),
         uuid_name=uuid_name,

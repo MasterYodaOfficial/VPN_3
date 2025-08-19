@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy import event
 from sqlalchemy.orm import declarative_base
 from contextlib import asynccontextmanager
-from core.config import settings  # используем config.py
+from app.core.config import settings  # используем config.py
 
 # Создание движка
 engine = create_async_engine(settings.DATABASE_URL)

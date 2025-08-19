@@ -1,25 +1,15 @@
 services:
-  quickvpn_bot:
+  app:
     build:
       context: .
-      dockerfile: bot/Dockerfile
-    container_name: quickvpn_bot
+      dockerfile: Dockerfile
+    container_name: quickvpn_app
+    restart: always
     env_file:
       - .env
     volumes:
-      - ./db.sqlite3:/app_bot/db.sqlite3
-      - ./logs:/app_bot/logs
-    environment:
-      - TZ=Europe/Moscow
-  quickvpn_api:
-    build:
-      context: .
-      dockerfile: fastapi_app/Dockerfile
-    container_name: quickvpn_api
-    env_file:
-      - .env
-    volumes:
-      - ./db.sqlite3:/app_fast_api/db.sqlite3
+      - ./db.sqlite3:/app/db.sqlite3
+      - ./logs:/app/logs
     ports:
       - "8000:8000"
     environment:
