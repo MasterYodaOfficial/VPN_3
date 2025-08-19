@@ -6,7 +6,7 @@ from app.core.config import settings
 
 
 async def about_command(message: Message, state: FSMContext):
-    logger.info(f"{message.from_user.id} {message.from_user.first_name}")
+    logger.bind(source="bot").info(f"{message.from_user.id} {message.from_user.first_name}")
     logo_image = FSInputFile("app/bot/media/logo.jpg")
     await message.answer_photo(
         photo=logo_image,

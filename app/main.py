@@ -9,7 +9,7 @@ from slowapi import _rate_limit_exceeded_handler
 
 
 from app.api.bot_api import router as bot_router
-from app.api.subscription import router as subscription_router
+from app.api.subscription import subscription_router
 from app.api.head import head_router
 from app.api.payment_webhooks.yookassa import yookassa_router
 from app.bot.bot_logic import setup_bot_logic
@@ -26,24 +26,24 @@ Configuration.secret_key = settings.YOOKASSA_TOKEN
 async def lifespan(app: FastAPI):
     try:
         await load_tariffs_from_json("database/tariffs.json")
-        logger.info("Тарифы успешно загружены/обновлены")
+        logger.bind(source="bot").info("Тарифы успешно загружены/обновлены")
     except Exception as e:
-        logger.debug(f"Ошибка при загрузке тарифов: {e}")
+        logger.bind(source="bot").debug(f"Ошибка при загрузке тарифов: {e}")
 
     try:
         await load_servers_from_json("database/servers.json")
-        logger.info("Сервера загружены и обновлены")
+        logger.bind(source="bot").info("Сервера загружены и обновлены")
     except Exception as e:
-        logger.debug(f"Ошибка при загрузке серверов: {e}")
+        logger.bind(source="bot").debug(f"Ошибка при загрузке серверов: {e}")
 
     setup_bot_logic(settings.DP_BOT, settings.BOT)
 
     await settings.BOT.set_webhook(url=settings.WEBHOOK_BOT_URL, secret_token=settings.WEBHOOK_SECRET)
-    logger.info(f"Вебхук установлен на: {settings.WEBHOOK_BOT_URL}")
+    logger.bind(source="bot").info(f"Вебхук установлен на: {settings.WEBHOOK_BOT_URL}")
 
     yield
 
-    logger.info("Остановка приложения... Удаление вебхука.")
+    logger.bind(source="bot").info("Остановка приложения... Удаление вебхука.")
     await settings.BOT.delete_webhook()
 
 

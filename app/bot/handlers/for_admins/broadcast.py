@@ -25,7 +25,7 @@ async def send_broadcast_task(bot: Bot, original_message: Message, user_ids: lis
             await asyncio.sleep(0.05)  # Пауза 50мс между отправками для защиты от Flood Limits
         except Exception as e:
             failed_count += 1
-            logger.warning(f"Ошибка при отправке рассылки пользователю {user_id}: {e}")
+            logger.bind(source="bot").warning(f"Ошибка при отправке рассылки пользователю {user_id}: {e}")
             if "Too Many Requests" in str(e):
                 await asyncio.sleep(1.5)  # Если ловим флуд, ждем подольше
 
@@ -39,7 +39,7 @@ async def send_broadcast_task(bot: Bot, original_message: Message, user_ids: lis
     try:
         await bot.send_message(admin_id, report_text)
     except Exception as e:
-        logger.error(f"Не удалось отправить отчет о рассылке админу {admin_id}: {e}")
+        logger.bind(source="bot").error(f"Не удалось отправить отчет о рассылке админу {admin_id}: {e}")
 
 
 async def broadcast_command(message: Message, state: FSMContext):
@@ -48,7 +48,7 @@ async def broadcast_command(message: Message, state: FSMContext):
     """
     user_db = await register_user_service(message)
     if not user_db.is_admin:
-        logger.warning(f"{message.from_user.id}, {message.from_user.first_name} нет админки игнор")
+        logger.bind(source="bot").warning(f"{message.from_user.id}, {message.from_user.first_name} нет админки игнор")
         await state.clear()
         return
 

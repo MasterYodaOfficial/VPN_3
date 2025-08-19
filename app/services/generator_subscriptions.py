@@ -132,6 +132,7 @@ async def activate_subscription(sub_id: int) -> Optional[Subscription]:
 
         await asyncio.gather(*tasks)
         session.add_all(servers)
+        subscription.is_active = True
         await session.commit()
 
         return subscription

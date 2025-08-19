@@ -54,7 +54,7 @@ class XUIHandler:
                 data = await response.json()
                 return self._normalize_json(data)
         except (aiohttp.ClientError, json.JSONDecodeError) as ex:
-            logger.error(f"Error getting clients: {str(ex)}")
+            logger.bind(source="bot").error(f"Error getting clients: {str(ex)}")
             return None
 
     async def get_inbounds(self) -> Optional[Dict]:
@@ -72,7 +72,7 @@ class XUIHandler:
                         break
                 return normalized
         except (aiohttp.ClientError, json.JSONDecodeError) as ex:
-            logger.error(f"Error getting inbounds: {str(ex)}")
+            logger.bind(source="bot").error(f"Error getting inbounds: {str(ex)}")
             return None
 
     async def add_client_vless(self, email: str, uid: str) -> Optional[str]:
@@ -102,7 +102,7 @@ class XUIHandler:
                 response.raise_for_status()
                 return uid
         except (aiohttp.ClientError, KeyError) as ex:
-            logger.error(f"Error adding client: {str(ex)}")
+            logger.bind(source="bot").error(f"Error adding client: {str(ex)}")
             return None
 
     async def get_conf_user_vless(self, email: str, conf_name: str) -> Optional[str]:
@@ -110,7 +110,7 @@ class XUIHandler:
         try:
             inbounds = await self.get_clients()
             if not inbounds or 'obj' not in inbounds:
-                logger.error("No inbounds found")
+                logger.bind(source="bot").error("No inbounds found")
                 return None
 
             server_address = self.panel_url.split('://')[-1].split(':')[0]
@@ -135,10 +135,10 @@ class XUIHandler:
                             server_address=server_address,
                             conf_name=conf_name
                         )
-            logger.error(f"Client {email} not found")
+            logger.bind(source="bot").error(f"Client {email} not found")
             return None
         except Exception as ex:
-            logger.error(f"Error generating config: {str(ex)}")
+            logger.bind(source="bot").error(f"Error generating config: {str(ex)}")
             return None
 
     async def delete_client_vless(self, client_uuid: str) -> bool:
@@ -155,7 +155,7 @@ class XUIHandler:
                     return True
                 return False
         except aiohttp.ClientError as ex:
-            logger.error(f"Error deleting client: {str(ex)}")
+            logger.bind(source="bot").error(f"Error deleting client: {str(ex)}")
             return False
 
     async def get_all_inbounds_with_client_stats(self) -> Optional[List[Dict]]:
@@ -171,10 +171,10 @@ class XUIHandler:
                     # Возвращаем только список объектов, как в документации
                     return data.get("obj", [])
                 else:
-                    logger.error(f"API панели {self.panel_url} вернуло ошибку: {data.get('msg')}")
+                    logger.bind(source="bot").error(f"API панели {self.panel_url} вернуло ошибку: {data.get('msg')}")
                     return None
         except (aiohttp.ClientError, json.JSONDecodeError) as ex:
-            logger.error(f"Ошибка при получении статистики с панели {self.panel_url}: {str(ex)}")
+            logger.bind(source="bot").error(f"Ошибка при получении статистики с панели {self.panel_url}: {str(ex)}")
             return None
 
     @staticmethod

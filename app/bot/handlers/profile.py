@@ -1,7 +1,7 @@
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from app.bot.utils.messages import (profile_message, choose_subscription_text_extend, choose_payment_message,
-                                    choose_tariff_message, payment_message, subscription_renewed_message,
+                                    choose_tariff_message, payment_message,
                                     trial_message, active_configs_list_message)
 from app.logger import logger
 from app.services.user_service import register_user_service
@@ -10,16 +10,14 @@ from app.bot.keyboards.inlines import (profile_buttons, active_subscriptions_but
 from app.bot.utils.statesforms import StepForm
 from app.services.generator_subscriptions import (create_trial_sub, get_active_user_subscription)
 from database.crud.crud_tariff import get_active_tariffs
-from app.services.payment_service import (create_payment_service, get_payment_status, confirm_payment_service,
-                                          error_payment_service)
+from app.services.payment_service import (create_payment_service)
 from app.core.config import settings
-import time
-import asyncio
+
 
 
 
 async def profile_command(message: Message, state: FSMContext):
-    logger.info(f"{message.from_user.id} {message.from_user.first_name}")
+    logger.bind(source="bot").info(f"{message.from_user.id} {message.from_user.first_name}")
     user_db = await register_user_service(message)
     await message.answer(
         text=profile_message.format(
@@ -37,7 +35,7 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
 
     """Принимает кнопки после команды профайл. Продлить подписку, купить подписку, пробная версия и так далее"""
 
-    logger.info(f"{call.from_user.id}, {call.from_user.first_name}")
+    logger.bind(source="bot").info(f"{call.from_user.id}, {call.from_user.first_name}")
     if call.data.startswith("profile"):
         _, profile_action = call.data.split(":")
         if profile_action == "trial":
@@ -148,27 +146,6 @@ async def get_payment_method_extend(call: CallbackQuery, state: FSMContext):
             reply_markup=make_pay_link_button(payment_url)
         )
         await state.clear()
-        # await state.set_state(StepForm.CONFIRM_PAYMENT_EXTEND)
-        # timeout = time.time() + 7 * 60  # 7 минут ожидания
-        # while time.time() < timeout:
-        #     status = await get_payment_status(payment)
-        #     if status == "paid":
-        #         await call.message.delete()
-        #         await call.message.answer(subscription_renewed_message.format(
-        #             sub_name=subscription.service_name,
-        #             duration_days=tariff.duration_days
-        #         ))
-        #         await confirm_payment_service(payment.id)
-        #         await state.clear()
-        #         return
-        #     current_state = await state.get_state()
-        #     if current_state != StepForm.CONFIRM_PAYMENT_EXTEND or status == "failed":
-        #         await call.message.delete()
-        #         await call.message.answer("Оплата отменена")
-        #         logger.info(f"cancel {call.from_user.id}, {call.from_user.first_name}")
-        #         await error_payment_service(payment.id)
-        #         return
-        #     await asyncio.sleep(5)
     else:
         await call.message.delete()
 
@@ -209,37 +186,5 @@ async def get_payment_method_buy(call: CallbackQuery, state: FSMContext):
             reply_markup=make_pay_link_button(payment_url)
         )
         await state.clear()
-    #     timeout = time.time() + 7 * 60  # 7 минут ожидания
-    #     while time.time() < timeout:
-    #         status = await get_payment_status(payment)
-    #         if status == "paid":
-    #             await activate_subscription(subscription.id)
-    #             await confirm_payment_service(payment.id)
-    #             await call.message.delete()
-    #             subscription_url = f"https://{settings.DOMAIN_API}{settings.SUBSCRIPTION_PATH}/{subscription.access_key}"
-    #             await call.message.answer(
-    #                 text=subscription_purchased_with_config_message.format(
-    #                     tariff_name=tariff.name,
-    #                     sub_name=subscription.service_name,
-    #                     subscription_url=subscription_url,
-    #                     logo_name=settings.LOGO_NAME
-    #                 ),
-    #                 disable_web_page_preview=True
-    #             )
-    #             await state.clear()
-    #             return
-    #         current_state = await state.get_state()
-    #         if current_state != StepForm.CONFIRM_PAYMENT_EXTEND or status == "failed":
-    #             await deactivate_only_subscription(subscription.id)
-    #             await call.message.delete()
-    #             await call.message.answer("Оплата отменена")
-    #             logger.info(f"cancel {call.from_user.id}, {call.from_user.first_name}")
-    #             await error_payment_service(payment.id)
-    #             return
-    #         await asyncio.sleep(5)
-    #     await error_payment_service(payment.id)
-    #     await deactivate_only_subscription(subscription.id)
-    #     await state.clear()
-    #     return
     else:
         await call.message.delete()

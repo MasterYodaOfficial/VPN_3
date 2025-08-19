@@ -9,7 +9,7 @@ from app.core.config import settings
 
 
 async def referral_command(message: Message, state: FSMContext):
-    logger.info(f"{message.from_user.id} {message.from_user.first_name}")
+    logger.bind(source="bot").info(f"{message.from_user.id} {message.from_user.first_name}")
     user_db = await register_user_service(message)
     referral_image = FSInputFile("app/bot/media/referral.jpg")
     await message.answer_photo(

@@ -7,7 +7,7 @@ from app.core.config import settings
 
 
 async def start_command(message: Message, state: FSMContext):
-    logger.info(f"{message.from_user.id} {message.from_user.first_name}")
+    logger.bind(source="bot").info(f"{message.from_user.id} {message.from_user.first_name}")
     referral_code = None
     welcome_image = FSInputFile("app/bot/media/welcome.jpg")
     if message.text and len(message.text.split()) > 1:

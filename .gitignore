@@ -11,3 +11,6 @@ logs/
 /fix_migration.py
 /env
 /dataview/
+/all_code.py
+/all_logs.py
+/all_code_all.py
