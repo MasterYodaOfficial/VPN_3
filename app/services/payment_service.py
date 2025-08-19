@@ -133,16 +133,16 @@ async def error_payment_service(payment_id: int) -> bool:
     async with get_session() as session:
         payment: Payment = await get_payment_by_id(session, payment_id)
         # Отмена в зависимости от метода оплаты в платежной системе
-        if payment.method == PaymentMethod.yookassa:
-            try:
-                if payment.external_payment_id:
-                    await cancel_yookassa_payment(payment.external_payment_id)
-            except Exception as e:
-                logger.error(f"Ошибка при отмене платежа {payment_id} в ЮKassa: {e}")
-                return False
-        if payment.method == PaymentMethod.crypto:
-            # TODO Сделать отмену для крипты
-            pass
+        # if payment.method == PaymentMethod.yookassa:
+        #     try:
+        #         if payment.external_payment_id:
+        #             await cancel_yookassa_payment(payment.external_payment_id)
+        #     except Exception as e:
+        #         logger.error(f"Ошибка при отмене платежа {payment_id} в ЮKassa: {e}")
+        #         return False
+        # if payment.method == PaymentMethod.crypto:
+        #     # TODO Сделать отмену для крипты
+        #     pass
         payment.status = "failed"
         await session.commit()
         return True

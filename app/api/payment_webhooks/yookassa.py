@@ -43,12 +43,11 @@ async def yookassa_webhook(request: Request):
         if internal_payment.status != "pending":
             logger.bind(source="payments").warning(f"Платеж {internal_payment.id} уже был обработан. Текущий статус: {internal_payment.status}")
             return Response(status_code=200)
-
+        sub = internal_payment.subscription
+        tariff = internal_payment.tariff
         if payment_status == 'succeeded':
             await confirm_payment_service(internal_payment.id)
             try:
-                sub = internal_payment.subscription
-                tariff = internal_payment.tariff
                 subscription_url = f"https://{settings.DOMAIN_API}{settings.SUBSCRIPTION_PATH}/{sub.access_key}"
 
                 await settings.BOT.send_message(
