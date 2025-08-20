@@ -11,6 +11,7 @@ from slowapi import _rate_limit_exceeded_handler
 from app.api.bot_api import router as bot_router
 from app.api.subscription import subscription_router
 from app.api.head import head_router
+from app.api.media import media_router
 from app.api.payment_webhooks.yookassa import yookassa_router
 from app.bot.bot_logic import setup_bot_logic
 from app.logger import logger
@@ -56,3 +57,4 @@ app.include_router(head_router, tags=["Head"]) # TODO можно сделать 
 app.include_router(bot_router, tags=["Telegram Bot"]) # Бот
 app.include_router(subscription_router, prefix=settings.SUBSCRIPTION_PATH, tags=["Subscription"]) # Подписки
 app.include_router(yookassa_router, tags=["Payment Yookassa"])
+app.include_router(media_router)

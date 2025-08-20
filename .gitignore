@@ -15,3 +15,5 @@ logs/
 /all_logs.py
 /all_code_all.py
 database/tariffs.json
+/app-config.json
+/app-config_default.json
