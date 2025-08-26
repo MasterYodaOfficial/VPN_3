@@ -7,7 +7,7 @@ from app.bot.handlers.profile import (profile_command, get_action_profile, get_s
                               get_payment_method_extend, get_tariff_extend, get_tariff_buy, get_payment_method_buy)
 from app.bot.handlers.referral import referral_command
 from app.bot.handlers.help import help_command, navigate_help_menu, show_install_guide
-from app.bot.handlers.for_admins import statistics, broadcast
+from app.bot.handlers.for_admins import statistics, broadcast, revorke_stars
 from aiogram.filters import Command
 from app.bot.utils.commands import start_bot
 from app.logger import logger
@@ -39,6 +39,7 @@ def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
     # Админки
     dp.message.register(broadcast.broadcast_command, Command('broadcast'))
     dp.message.register(statistics.admin_command, Command('admin'))
+    dp.message.register(revorke_stars.refund_command, Command('refund'))
     dp.callback_query.register(broadcast.broadcast_command, F.data == "admin_broadcast_start")
     dp.message.register(broadcast.receive_broadcast_message, StepForm.WAITING_BROADCAST_MESSAGE)
     dp.callback_query.register(broadcast.confirm_broadcast_handler, StepForm.CONFIRM_BROADCAST)

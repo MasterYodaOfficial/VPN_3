@@ -17,6 +17,18 @@ async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
     """
     external_id = pre_checkout_query.invoice_payload
     logger.info(f"Получен PreCheckoutQuery с external_id/payload: {external_id}")
+    async with get_session() as session:
+        payment = await get_payment_by_external_id(session, external_id)
+        if not payment:
+            error_message = "Платеж не найден в системе. Пожалуйста, создайте его заново."
+            logger.warning(f"PreCheckoutQuery отклонен: платеж с payload {payload} не найден.")
+            await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=False, error_message=error_message)
+            return
+        if payment.status != "pending":
+            error_message = "Этот платеж уже был обработан. Пожалуйста, создайте новый."
+            logger.warning(f"PreCheckoutQuery отклонен: платеж {payment.id} уже имеет статус {payment.status}.")
+            await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=False, error_message=error_message)
+            return
     await settings.BOT.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
 
 
@@ -51,5 +63,6 @@ async def successful_payment_handler(message: Message):
                 subscription_url=subscription_url,
                 logo_name=settings.LOGO_NAME
             ),
-            message_effect_id="5159385139981059251"
+            message_effect_id="5159385139981059251",
+            disable_web_page_preview=True
         )
