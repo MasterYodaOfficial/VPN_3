@@ -39,7 +39,17 @@ async def lifespan(app: FastAPI):
 
     setup_bot_logic(settings.DP_BOT, settings.BOT)
 
-    await settings.BOT.set_webhook(url=settings.WEBHOOK_BOT_URL, secret_token=settings.WEBHOOK_SECRET)
+    await settings.BOT.set_webhook(
+        url=settings.WEBHOOK_BOT_URL,
+        secret_token=settings.WEBHOOK_SECRET,
+        allowed_updates=[
+            "message",
+            "callback_query",
+            "pre_checkout_query",
+            "chat_member",
+            "my_chat_member"
+        ]
+    )
     logger.bind(source="bot").info(f"Вебхук установлен на: {settings.WEBHOOK_BOT_URL}")
 
     yield
