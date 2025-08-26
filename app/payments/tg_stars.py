@@ -24,7 +24,6 @@ async def create_payment_tg_stars(tariff: Tariff):
         title=f"{settings.LOGO_NAME}",
         description=f"Тариф: {tariff.name} ({tariff.duration_days} дней)",
         payload=external_id,
-        provider_token="",
         currency="XTR",
         prices=[LabeledPrice(label=f"Telegram Stars", amount=stars_amount)]
     )
