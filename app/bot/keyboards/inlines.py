@@ -56,6 +56,8 @@ def payments_buttons() -> InlineKeyboardMarkup:
         kb.button(text="💸 Оплата ЮKassa", callback_data="pay:yookassa")
     if settings.CRYPTO_TOKEN:
         kb.button(text="🧾 Крипто-оплата", callback_data="pay:crypto")
+    if settings.TELEGRAM_STARS:
+        kb.button(text="⭐ Telegram Stars", callback_data="pay:tg_stars")
     kb.adjust(1)
     return kb.as_markup()
 

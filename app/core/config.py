@@ -35,7 +35,9 @@ class Settings:
     if YOOKASSA_TOKEN:
         YOOKASSA_SHOP_ID: str = os.getenv("YOOKASSA_SHOP_ID")
     CRYPTO_TOKEN: str = os.getenv("CRYPTO_TOKEN", None)
-
+    TELEGRAM_STARS: bool = os.getenv("TELEGRAM_STARS", "false").lower() in ("1", "true", "yes")
+    if TELEGRAM_STARS:
+        RUB_PER_STAR: float = float(os.getenv("RUB_PER_STAR", 1.79))
     DOMAIN_API: str = os.getenv("DOMAIN_API")
     LOGO_NAME: str = os.getenv("LOGO_NAME")
 

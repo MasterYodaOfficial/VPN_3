@@ -11,6 +11,7 @@ from app.bot.utils.statesforms import StepForm
 from app.services.generator_subscriptions import (create_trial_sub, get_active_user_subscription)
 from database.crud.crud_tariff import get_active_tariffs
 from app.services.payment_service import (create_payment_service)
+from database.enums import PaymentMethod
 from app.core.config import settings
 
 

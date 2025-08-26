@@ -19,6 +19,7 @@ from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from app.bot.utils.messages import subscription_expiration_warning_message
 from typing import List
+from app.payments.tg_stars import create_payment_tg_stars
 
 
 
@@ -52,6 +53,8 @@ async def create_payment_service(
                 external_id, payment_url = await create_payment_yookassa(tariff.price, tariff.name)
             if PaymentMethod.crypto == method:
                 raise ValueError("Need add to payment crypto") # TODO Добавить оплату криптой
+            if PaymentMethod.tg_stars == method:
+                external_id, payment_url = await create_payment_tg_stars(tariff)
             payment: Payment = await create_payment(
                 session=session,
                 user_id=user.id,
@@ -132,17 +135,6 @@ async def error_payment_service(payment_id: int) -> bool:
     """
     async with get_session() as session:
         payment: Payment = await get_payment_by_id(session, payment_id)
-        # Отмена в зависимости от метода оплаты в платежной системе
-        # if payment.method == PaymentMethod.yookassa:
-        #     try:
-        #         if payment.external_payment_id:
-        #             await cancel_yookassa_payment(payment.external_payment_id)
-        #     except Exception as e:
-        #         logger.error(f"Ошибка при отмене платежа {payment_id} в ЮKassa: {e}")
-        #         return False
-        # if payment.method == PaymentMethod.crypto:
-        #     # TODO Сделать отмену для крипты
-        #     pass
         payment.status = "failed"
         await session.commit()
         return True
