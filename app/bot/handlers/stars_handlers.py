@@ -52,5 +52,6 @@ async def successful_payment_handler(message: Message, bot: Bot):
                 sub_name=sub.service_name,
                 subscription_url=subscription_url,
                 logo_name=settings.LOGO_NAME
-            )
+            ),
+            message_effect_id="5159385139981059251"
         )

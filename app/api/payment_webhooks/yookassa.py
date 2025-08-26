@@ -58,6 +58,7 @@ async def yookassa_webhook(request: Request):
                         subscription_url=subscription_url,
                         logo_name=settings.LOGO_NAME
                     ),
+                    message_effect_id="5159385139981059251",
                     disable_web_page_preview=True
                 )
             except Exception as e:
