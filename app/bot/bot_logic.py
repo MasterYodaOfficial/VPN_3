@@ -15,7 +15,6 @@ from app.bot.utils.throttling import ThrottlingMiddleware
 from app.services.generator_subscriptions import deactivate_expired_subscriptions, update_servers_load_statistics
 from app.services.payment_service import send_expiration_warnings
 from app.bot.utils.statesforms import StepForm
-from aiogram.enums import ContentType
 from app.bot.handlers.stars_handlers import pre_checkout_handler, successful_payment_handler
 
 
@@ -64,7 +63,7 @@ def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
 
     # Обработка покупки звездами
     dp.pre_checkout_query.register(pre_checkout_handler)
-    dp.message.register(successful_payment_handler, F.content_type == ContentType.SUCCESSFUL_PAYMENT)
+    dp.message.register(successful_payment_handler, F.successful_payment)
 
 
     # --- Настройка и запуск планировщиков ---
