@@ -362,3 +362,67 @@ def generate_vless_list_for_happ(configs: List[str]) -> str:
     valid_configs = [c for c in configs if c]
 
     return "\n".join(valid_configs)
+
+
+async def sync_all_active_subscriptions() -> tuple[int, int]:
+    """
+    Синхронизирует конфиги для ВСЕХ активных подписок.
+    - Добавляет конфиги на новых серверах.
+    - Удаляет конфиги со старых/неактивных серверов.
+    Возвращает кортеж (количество добавленных, количество удаленных конфигов).
+    """
+    logger.info("SYNC: Запуск полной синхронизации конфигов...")
+    added_configs = 0
+    deleted_configs = 0
+
+    async with get_session() as session:
+        # 1. Получаем актуальный список ВСЕХ активных серверов
+        active_servers_list = await get_all_servers_with_load(session)
+        active_server_ids = {server.id for server in active_servers_list}
+
+        # 2. Получаем ВСЕ активные подписки с их текущими конфигами
+        stmt = (
+            select(Subscription)
+            .options(selectinload(Subscription.configs))
+            .where(Subscription.is_active == True)
+        )
+        result = await session.execute(stmt)
+        active_subscriptions: List[Subscription] = result.scalars().unique().all()
+
+        logger.info(f"SYNC: Найдено {len(active_subscriptions)} активных подписок для проверки.")
+
+        # 3. Проходимся по каждой подписке
+        for sub in active_subscriptions:
+            current_server_ids = {config.server_id for config in sub.configs}
+
+            # --- 3.1. Ищем серверы, на которых нужно СОЗДАТЬ конфиг ---
+            servers_to_add_ids = active_server_ids - current_server_ids
+            if servers_to_add_ids:
+                servers_to_add = [s for s in active_servers_list if s.id in servers_to_add_ids]
+                logger.info(f"SYNC: Для подписки {sub.id} нужно добавить конфиги на {len(servers_to_add)} серверах.")
+
+                tasks = [
+                    create_server_config(
+                        server=server, subscription=sub,
+                        email=sub.service_name, uid=sub.uuid_name
+                    ) for server in servers_to_add
+                ]
+                await asyncio.gather(*tasks)
+                added_configs += len(tasks)
+
+            # --- 3.2. Ищем конфиги, которые нужно УДАЛИТЬ ---
+            configs_to_delete = [config for config in sub.configs if config.server_id not in active_server_ids]
+            if configs_to_delete:
+                logger.info(f"SYNC: Для подписки {sub.id} нужно удалить {len(configs_to_delete)} устаревших конфигов.")
+
+                # Здесь мы не удаляем клиента из 3x-ui, так как сервер может быть просто временно неактивен.
+                # Мы просто удаляем конфиг из НАШЕЙ базы, чтобы он не попадал в подписку.
+                for config in configs_to_delete:
+                    await session.delete(config)
+                deleted_configs += len(configs_to_delete)
+
+        if added_configs > 0 or deleted_configs > 0:
+            await session.commit()
+
+    logger.info(f"SYNC: Синхронизация завершена. Добавлено: {added_configs}, Удалено: {deleted_configs}.")
+    return added_configs, deleted_configs

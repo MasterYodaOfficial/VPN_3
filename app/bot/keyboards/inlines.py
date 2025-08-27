@@ -132,6 +132,7 @@ def admin_panel_buttons() -> InlineKeyboardMarkup:
     kb.button(text="🚀 Подписки", callback_data="admin_stats:subs")
     kb.button(text="🗣️ Рефералы", callback_data="admin_stats:referrals")
     kb.button(text="🖥️ Состояние серверов", callback_data="admin_stats:servers")
+    kb.button(text="🖥️ Синхронизация конфигов", callback_data="admin_stats:sync_configs")
     kb.adjust(2, 2, 2, 1)
     return kb.as_markup()
 
