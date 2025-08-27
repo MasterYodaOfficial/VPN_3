@@ -88,7 +88,7 @@ async def navigate_admin_panel(call: CallbackQuery):
             await call.message.edit_text("🔄 Запускаю полную синхронизацию конфигов... Это может занять некоторое время.")
             try:
                 added, deleted = await sync_all_active_subscriptions()
-                await call.edit_text(
+                await call.message.edit_text(
                     "✅ **Синхронизация завершена!**\n\n"
                     f"➕ Добавлено новых конфигов: <b>{added}</b>\n"
                     f"🗑 Удалено устаревших конфигов: <b>{deleted}</b>\n\n"
@@ -96,7 +96,7 @@ async def navigate_admin_panel(call: CallbackQuery):
                 )
             except Exception as e:
                 logger.error(f"Критическая ошибка во время синхронизации конфигов: {e}")
-                await call.edit_text(
+                await call.message.edit_text(
                     "❌ **Произошла ошибка!**\n\nНе удалось завершить синхронизацию. Подробности в логах.")
             return
         else:
