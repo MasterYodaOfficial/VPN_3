@@ -1,188 +1,149 @@
-from app.services.generator_subscriptions import activate_subscription
-from database.models import Payment, Tariff, Subscription, User
-from aiogram.types import User as User_tg
-from database.crud.crud_payment import create_payment, get_payment_by_id
-from database.crud.crud_tariff import get_tariff_by_id
-from database.crud.crud_subscription import get_subscription_by_id, create_subscription
-from database.crud.crud_user import get_user_by_telegram_id
-from database.enums import PaymentMethod
-from app.payments.yookassa import create_payment_yookassa, cancel_yookassa_payment
-from database.session import get_session
-from app.logger import logger
-import asyncio
-from yookassa import Payment as YooPayment
-from app.core.config import settings
+# app/services/payment_service.py
+
 from datetime import datetime, timedelta
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from aiogram import Bot
-from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
-from app.bot.utils.messages import subscription_expiration_warning_message
-from typing import List
-from app.payments.tg_stars import create_payment_tg_stars
+from typing import Dict, Optional, Tuple, Type
 
+from aiogram.types import User as UserTG
+from app.core.config import settings
+from app.logger import logger
 
+# --- Импортируем наши шлюзы и сервисы ---
+from app.payments.base_gateway import BaseGateway
+from app.payments.tg_stars import TelegramStarsGateway
+from app.payments.yookassa import YookassaGateway
+from app.services.subscription_service import subscription_service
 
-async def create_payment_service(
-        user: User_tg,
-        tariff_id: int,
-        method: str,
-        sub_id: int = None,
-) -> tuple[Payment, Tariff, Subscription, str] | None:
+# --- Импортируем модели напрямую ---
+from database.enums import PaymentMethod
+from database.models import Payment, Subscription, Tariff, User
+from database.session import get_session
+from app.services.remnawave_service import remna_service
 
+class PaymentService:
     """
-    Создаёт платёж через нужную платёжную систему, сохраняет его в БД и возвращает объект и ссылку на оплату.
+    Класс-сервис для управления бизнес-логикой, связанной с платежами.
     """
-    try:
-        async with get_session() as session:
-            tariff: Tariff = await get_tariff_by_id(session, tariff_id)
-            if sub_id:
-                subscription: Subscription = await get_subscription_by_id(session, sub_id)
-            else:
-                user_db = await get_user_by_telegram_id(session, user.id)
-                subscription: Subscription = await create_subscription(
+
+    def __init__(self):
+        self.gateways: Dict[PaymentMethod, Type[BaseGateway]] = {}
+        if settings.YOOKASSA_TOKEN and settings.YOOKASSA_SHOP_ID:
+            self.gateways[PaymentMethod.yookassa] = YookassaGateway
+        if settings.TELEGRAM_STARS:
+            self.gateways[PaymentMethod.tg_stars] = TelegramStarsGateway
+        logger.info(f"Зарегистрированные платежные шлюзы: {[gw.name for gw in self.gateways.keys()]}")
+
+    def _get_gateway(self, method: PaymentMethod) -> Optional[BaseGateway]:
+        gateway_class = self.gateways.get(method)
+        return gateway_class() if gateway_class else None
+
+    async def create_payment_link(
+            self,
+            user_tg: UserTG,
+            tariff_id: int,
+            method_str: str,
+            sub_id_to_extend: Optional[int] = None,
+    ) -> Optional[Tuple[Payment, Tariff, Subscription, str]]:
+        """
+        Основной метод для создания платежа.
+        1. Находит или создает подписку.
+        2. Выбирает нужный платежный шлюз.
+        3. Создает платеж во внешней системе и возвращает ссылку на оплату.
+        4. Сохраняет запись о платеже в нашей БД.
+        """
+        try:
+            method = PaymentMethod(method_str)
+            gateway = self._get_gateway(method)
+            if not gateway:
+                logger.error(f"Платежный шлюз '{method_str}' не настроен.")
+                return None
+
+            async with get_session() as session:
+                tariff = await Tariff.get_by_id(session, tariff_id)
+                user_db = await User.get_by_telegram_id(session, user_tg.id)
+                if not tariff or not user_db:
+                    logger.error("Тариф или пользователь не найдены при создании платежа.")
+                    return None
+
+                if sub_id_to_extend:
+                    subscription = await Subscription.get_by_id(session, sub_id_to_extend)
+                    if not subscription or subscription.telegram_id != user_tg.id:
+                        logger.error("Подписка для продления не найдена.")
+                        return None
+                else:
+                    subscription = await subscription_service.create_pending_subscription(user_db, tariff)
+
+                payment_details = await gateway.create_payment(tariff)
+                if not payment_details:
+                    logger.error(f"Шлюз '{method_str}' не смог создать платеж.")
+                    return None
+
+                external_id, payment_url = payment_details
+
+                payment = await Payment.create(
                     session=session,
-                    user=user_db,
-                    tariff_id=tariff_id,
-                    is_active_status=False
+                    user_id=user_tg.id, amount=tariff.price, method=method,
+                    tariff_id=tariff.id, subscription_id=subscription.id,
+                    external_payment_id=external_id
                 )
-                sub_id = subscription.id
+                return payment, tariff, subscription, payment_url
 
-            if PaymentMethod.yookassa == method:
-                method = PaymentMethod(method)
-                external_id, payment_url = await create_payment_yookassa(tariff.price, tariff.name)
-            if PaymentMethod.crypto == method:
-                raise ValueError("Need add to payment crypto") # TODO Добавить оплату криптой
-            if PaymentMethod.tg_stars == method:
-                external_id, payment_url = await create_payment_tg_stars(tariff)
-            payment: Payment = await create_payment(
-                session=session,
-                user_id=user.id,
-                amount=tariff.price,
-                method=method,
-                tariff_id=tariff.id,
-                subscription_id=sub_id,
-                external_payment_id=external_id
-            )
+        except Exception as e:
+            logger.error(f"Ошибка при создании ссылки на оплату для пользователя {user_tg.id}: {e}")
+            return None
+
+    async def confirm_payment(self, payment_id: int) -> Optional[Payment]:
+        """
+        Подтверждает оплату, продлевает подписку и начисляет реферальные бонусы.
+        Вызывается из вебхуков (ЮKassa) или хендлеров (Telegram Stars).
+        """
+        async with get_session() as session:
+            payment = await Payment.get_by_id_with_relations(session, payment_id)
+            if not payment or payment.status != "pending":
+                logger.warning(f"Попытка подтвердить уже обработанный или несуществующий платеж ID: {payment_id}")
+                return None
+
+            # 1. Обновляем подписку
+            subscription: Subscription = payment.subscription
+            tariff: Tariff = payment.tariff
+            current_end_date = subscription.end_date if subscription.is_active and subscription.end_date > datetime.now() else datetime.now()
+            new_end_date = current_end_date + timedelta(days=tariff.duration_days)
+
+            # Обновляем дату в Remnawave
+            await remna_service.update_user_expiration(subscription.remnawave_uuid, new_end_date)
+
+            # Обновляем дату и статус в нашей БД
+            await subscription.update(session, end_date=new_end_date, is_active=True)
+
+            # 2. Обновляем статус платежа
+            payment.status = "succeeded"  # Используем succeeded для консистентности с YooKassa
+
+            # 3. Начисляем реферальный бонус (если это первая покупка)
+            buyer: User = payment.user
+            if buyer.inviter_id and not buyer.had_first_purchase:
+                inviter = await User.get_by_telegram_id(session, buyer.inviter_id)
+                if inviter:
+                    commission = int(payment.amount * (settings.REFERRAL_COMMISSION_PERCENT / 100))
+                    await inviter.update(session, balance=inviter.balance + commission)
+                    logger.info(f"Начислен реф. бонус {commission}р. пользователю {inviter.telegram_id}")
+
+            await buyer.update(session, had_first_purchase=True)
+
             await session.commit()
-            await session.refresh(payment)
-            return payment, tariff, subscription, payment_url
-    except BaseException as ex:
-        logger.error(f"Ошибка в создании платежа {ex}")
-        return None
+            logger.info(f"Платеж ID:{payment.id} успешно подтвержден.")
+            return payment
+
+    async def fail_payment(self, payment_id: int) -> Optional[Payment]:
+        """Отмечает платеж как отмененный или неудачный."""
+        async with get_session() as session:
+            payment = await session.get(Payment, payment_id)
+            if not payment or payment.status != "pending":
+                logger.error("Платеж не найден или статус не в ожидании оплаты")
+                return None
+
+            await payment.update(session, status="canceled")
+            logger.warning(f"Платеж ID:{payment.id} отмечен как отмененный.")
+            return payment
 
 
-async def get_payment_status(payment: Payment):
-    """
-    Проверяет статус платежа по его id
-    """
-    method = payment.method
-    external_id = payment.external_payment_id
-
-    if method == "yookassa":
-        yoo_payment = await asyncio.to_thread(YooPayment.find_one, external_id)
-        status = yoo_payment.status
-        if status == "succeeded":
-            return "paid"
-        if status in ['canceled', 'failed']:
-            return "failed"
-    if method == "crypto":
-        pass
-        # TODO сделать проверку крипты
-
-
-async def confirm_payment_service(payment_id: int) -> bool:
-    """
-    Подтверждает оплату, продлевает подписку на количество дней согласно тарифу.
-    Начисляет реферальное вознаграждение
-    за ПЕРВУЮ покупку
-    Активирует конфиги
-    :param payment_id: ID платежа
-    :return: True, если операция успешна, иначе False
-    """
-    async with get_session() as session:
-        payment: Payment = await get_payment_by_id(session, payment_id)
-        payment.status = "success"
-        # генерим конфиги
-        await activate_subscription(payment.subscription_id)
-        # Получаем пользователя, который совершил покупку
-        buyer: User = await get_user_by_telegram_id(session, payment.user_id)
-        if buyer.inviter_id and not buyer.had_first_purchase:
-            # Находим пригласившего
-            inviter: User = await get_user_by_telegram_id(session, buyer.inviter_id)
-            if inviter:
-                # Рассчитываем вознаграждение
-                commission_amount = int(payment.amount * (settings.REFERRAL_COMMISSION_PERCENT / 100))
-                # Начисляем на баланс пригласившего
-                inviter.balance += commission_amount
-                logger.info(
-                    f"Начислено реферальное вознаграждение: {commission_amount} RUB "
-                    f"пользователю {inviter.telegram_id} за первую покупку от {buyer.telegram_id}"
-                )
-        buyer.had_first_purchase = True
-        subscription = payment.subscription
-        tariff = payment.tariff
-
-        subscription.end_date += timedelta(days=tariff.duration_days)
-        await session.commit()
-        return True
-
-async def error_payment_service(payment_id: int) -> bool:
-    """
-    Сменяет статус платежа на ошибку.
-    :param payment_id:
-    :return:
-    """
-    async with get_session() as session:
-        payment: Payment = await get_payment_by_id(session, payment_id)
-        payment.status = "failed"
-        await session.commit()
-        return True
-
-
-async def send_expiration_warnings(bot: Bot):
-    """
-    Находит подписки, истекающие на следующий день, и отправляет пользователям
-    уведомление с предложением продлить.
-    """
-    logger.info("Scheduler: Запуск задачи по отправке уведомлений об окончании подписки...")
-
-    now = datetime.now()
-    tomorrow_start = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    day_after_tomorrow_start = (now + timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0)
-
-    async with get_session() as session:
-        stmt = (
-            select(Subscription)
-            .options(selectinload(Subscription.user))  # Подгружаем пользователя, чтобы знать его telegram_id
-            .where(
-                Subscription.end_date >= tomorrow_start,
-                Subscription.end_date < day_after_tomorrow_start,
-                Subscription.is_active == True
-            )
-        )
-        result = await session.execute(stmt)
-        subscriptions_to_notify: List[Subscription] = result.scalars().all()
-
-        if not subscriptions_to_notify:
-            logger.info("Scheduler: Не найдено подписок для отправки уведомлений.")
-            return
-
-        logger.info(f"Scheduler: Найдено {len(subscriptions_to_notify)} подписок для уведомления.")
-
-        sent_count = 0
-        for sub in subscriptions_to_notify:
-            try:
-                await bot.send_message(
-                    chat_id=sub.user.telegram_id,
-                    text=subscription_expiration_warning_message.format(sub_name=sub.service_name)
-                )
-                sent_count += 1
-                await asyncio.sleep(0.1)
-            except (TelegramBadRequest, TelegramForbiddenError) as e:
-                logger.warning(f"Scheduler: Не удалось отправить уведомление пользователю {sub.user.telegram_id}: {e}")
-            except Exception as e:
-                logger.error(
-                    f"Scheduler: Непредвиденная ошибка при отправке уведомления пользователю {sub.user.telegram_id}: {e}")
-
-    logger.info(f"Scheduler: Успешно отправлено {sent_count} из {len(subscriptions_to_notify)} уведомлений.")
+# --- Создаем единственный экземпляр сервиса ---
+payment_service = PaymentService()

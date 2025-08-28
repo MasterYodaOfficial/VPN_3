@@ -50,7 +50,14 @@ async def lifespan(app: FastAPI):
             "my_chat_member"
         ]
     )
-    logger.bind(source="bot").info(f"Вебхук установлен на: {settings.WEBHOOK_BOT_URL}")
+    logger.bind(source="bot").info(f"Вебхук установлен на: {settings.WEBHOOK_BOT_PATH} + secret")
+    stats = await settings.REMNA_SDK.system.get_stats()
+    # Если запрос успешен, выводим полезную информацию
+    total_users = stats.users.total_users
+    total_nodes = stats.nodes.total_online
+    logger.info(f"✅ Успешное подключение к Remnawave. "
+                f"Всего пользователей в панели: {total_users}\n"
+                f"Нод онлайн: {total_nodes}")
 
     yield
 
@@ -63,7 +70,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-app.include_router(head_router, tags=["Head"]) # TODO можно сделать одностраничник
+app.include_router(head_router, tags=["Head"]) # TODO.md можно сделать одностраничник
 app.include_router(bot_router, tags=["Telegram Bot"]) # Бот
 app.include_router(subscription_router, prefix=settings.SUBSCRIPTION_PATH, tags=["Subscription"]) # Подписки
 app.include_router(yookassa_router, tags=["Payment Yookassa"])

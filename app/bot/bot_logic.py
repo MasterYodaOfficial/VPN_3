@@ -13,7 +13,7 @@ from app.bot.utils.commands import start_bot
 from app.logger import logger
 from app.bot.utils.throttling import ThrottlingMiddleware
 from app.services.generator_subscriptions import deactivate_expired_subscriptions, update_servers_load_statistics
-from app.services.payment_service import send_expiration_warnings
+from app.services.payment import send_expiration_warnings
 from app.bot.utils.statesforms import StepForm
 from app.bot.handlers.stars_handlers import pre_checkout_handler, successful_payment_handler
 

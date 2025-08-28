@@ -1,64 +1,87 @@
 import random
 import string
 from typing import Optional
+
 from aiogram.types import Message
-from database.session import get_session
+from app.core.config import settings
+from app.logger import logger
+
 from database.models import User
-from database.crud.crud_user import get_user_by_telegram_id, get_user_by_referral_code, create_user
+from database.session import get_session
 
 
-def generate_referral_code(length: int = 8) -> str:
+def _generate_referral_code(length: int = 8) -> str:
+    """Вспомогательная функция для генерации реферального кода."""
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 
-async def register_user_service(
-    message: Message,
-    referral_code: Optional[str] = None
-) -> User:
-    async with get_session() as session:
-        telegram_id = message.from_user.id
-        username = message.from_user.first_name
-        user_from_tg = message.from_user
+class UserService:
+    """
+    Класс-сервис для управления бизнес-логикой, связанной с пользователями.
+    Использует методы моделей (Active Record) для взаимодействия с БД.
+    """
 
-        # Проверяем, есть ли пользователь в базе
-        user = await get_user_by_telegram_id(session, telegram_id)
-        if user:
-            # ---> ЛОГИКА ОБНОВЛЕНИЯ ДЛЯ СУЩЕСТВУЮЩЕГО ПОЛЬЗОВАТЕЛЯ <---
-            should_commit = False
-            # Обновляем first_name, если он изменился
-            if user.username != user_from_tg.first_name:
-                user.username = user_from_tg.first_name
-                should_commit = True
-            # Обновляем @username (link), если он изменился
-            if user.link != user_from_tg.username:
-                user.link = user_from_tg.username
-                should_commit = True
+    async def register_or_update_user(
+            self,
+            message: Message,
+            referral_code: Optional[str] = None
+    ) -> User:
+        """
+        Регистрирует нового пользователя или обновляет данные существующего.
+        Это основной метод для обработки первого контакта пользователя с ботом.
 
-            if should_commit:
-                await session.commit()
+        :param message: Объект сообщения от пользователя.
+        :param referral_code: Опциональный реферальный код из команды /start.
+        :return: Объект User из БД (созданный или обновленный).
+        """
+        async with get_session() as session:
+            user_from_tg = message.from_user
 
-            return user
+            # 1. Пытаемся найти пользователя в нашей БД
+            user = await User.get_by_telegram_id(session, user_from_tg.id)
 
-        inviter_id = None
-        if referral_code:
-            inviter = await get_user_by_referral_code(session, referral_code)
-            if inviter:
-                inviter_id = inviter.telegram_id
+            if user:
+                # 2. Если пользователь найден - обновляем его данные, если они изменились
+                update_data = {}
+                if user.username != user_from_tg.first_name:
+                    update_data['username'] = user_from_tg.first_name
+                if user.link != user_from_tg.username:
+                    update_data['link'] = user_from_tg.username
 
-        # Генерируем уникальный referral_code для нового пользователя
-        while True:
-            new_referral_code = generate_referral_code()
-            exists = await get_user_by_referral_code(session, new_referral_code)
-            if not exists:
-                break
+                if update_data:
+                    logger.info(f"Обновление данных для пользователя {user.telegram_id}: {update_data}")
+                    await user.update(session, **update_data)
 
-        # Создаем пользователя
-        user = await create_user(
-            session=session,
-            telegram_id=telegram_id,
-            username=username,
-            link=user_from_tg.username,
-            inviter_id=inviter_id,
-            referral_code=new_referral_code
-        )
-        return user
+                return user
+
+            # 3. Если пользователь не найден - создаем нового
+            logger.info(f"Регистрация нового пользователя: {user_from_tg.id} ({user_from_tg.first_name})")
+            inviter_id = None
+            if referral_code:
+                inviter = await User.get_by_referral_code(session, referral_code)
+                if inviter:
+                    inviter_id = inviter.telegram_id
+                    logger.info(f"Пользователь {user_from_tg.id} пришел по приглашению от {inviter_id}")
+
+            # Генерируем уникальный реферальный код для новичка
+            while True:
+                new_referral_code = _generate_referral_code()
+                if not await User.get_by_referral_code(session, new_referral_code):
+                    break
+
+            # Создаем пользователя, используя метод модели
+            new_user = await User.create(
+                session=session,
+                telegram_id=user_from_tg.id,
+                username=user_from_tg.first_name,
+                link=user_from_tg.username,
+                inviter_id=inviter_id,
+                referral_code=new_referral_code,
+                is_admin=(user_from_tg.id in settings.ADMIN_IDS),  # Сразу назначаем админа
+                has_trial=(settings.TRIAL_DAYS > 0)  # Устанавливаем флаг триала на основе настроек
+            )
+            return new_user
+
+
+
+user_service = UserService()

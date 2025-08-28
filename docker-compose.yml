@@ -9,6 +9,7 @@ services:
       - .env
     volumes:
       - ./db.sqlite3:/app/db.sqlite3
+      - ./db_v2.sqlite3:/app/db_v2.sqlite3
       - ./logs:/app/logs
     ports:
       - "8000:8000"

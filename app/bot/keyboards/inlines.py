@@ -50,7 +50,7 @@ def active_subscriptions_buttons(sub_list: List[Subscription]) -> InlineKeyboard
     return kb.as_markup()
 
 def payments_buttons() -> InlineKeyboardMarkup:
-    """Формирует кнопки для оплаты подгружая фактический с .env"""
+    """Формирует кнопки для оплаты подгружая фактический с .envex"""
     kb = InlineKeyboardBuilder()
     if settings.YOOKASSA_TOKEN:
         kb.button(text="💸 Оплата ЮKassa", callback_data="pay:yookassa")

@@ -4,6 +4,7 @@ from app.services.user_service import register_user_service
 from app.bot.utils.messages import start_message, first_trial_message
 from app.logger import logger
 from app.core.config import settings
+from app.services.user_service import user_service
 
 
 async def start_command(message: Message, state: FSMContext):
@@ -12,7 +13,8 @@ async def start_command(message: Message, state: FSMContext):
     welcome_image = FSInputFile("app/bot/media/welcome.jpg")
     if message.text and len(message.text.split()) > 1:
         referral_code = message.text.split()[1]
-    user_db = await register_user_service(
+
+    user_db = await user_service.register_or_update_user(
         message=message,
         referral_code=referral_code
     )

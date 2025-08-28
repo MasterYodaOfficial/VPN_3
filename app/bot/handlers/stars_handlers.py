@@ -4,7 +4,7 @@ from aiogram.types import Message, PreCheckoutQuery
 
 from app.logger import logger
 from app.core.config import settings
-from app.services.payment_service import confirm_payment_service
+from app.services.payment import confirm_payment_service
 from app.bot.utils.messages import subscription_purchased_with_config_message
 from database.crud.crud_payment import get_payment_by_external_id
 from database.session import get_session

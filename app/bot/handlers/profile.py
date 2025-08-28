@@ -6,14 +6,16 @@ from app.bot.utils.messages import (profile_message, choose_subscription_text_ex
 from app.logger import logger
 from app.services.user_service import register_user_service
 from app.bot.keyboards.inlines import (profile_buttons, active_subscriptions_buttons, payments_buttons,
-                                       tariff_buttons, make_pay_link_button, tariff_buttons_buy)
+                                       tariff_buttons, make_pay_link_button, tariff_buttons_buy,
+                                       get_config_webapp_button)
 from app.bot.utils.statesforms import StepForm
-from app.services.generator_subscriptions import (create_trial_sub, get_active_user_subscription)
+from app.services.generator_subscriptions import (get_active_user_subscription)
 from database.crud.crud_tariff import get_active_tariffs
-from app.services.payment_service import (create_payment_service)
-from database.enums import PaymentMethod
-from app.core.config import settings
+from app.services.payment import (create_payment_service)
 
+from app.core.config import settings
+from app.services.subscription_service import subscription_service
+from app.services.tariff_service import tariff_service
 
 
 
@@ -41,28 +43,29 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
         _, profile_action = call.data.split(":")
         if profile_action == "trial":
             await call.message.edit_text("⏳ Генерируем пробную подписку...")
-            subscription = await create_trial_sub(call.from_user)
-            if subscription:
-                subscription_url = f"https://{settings.DOMAIN_API}{settings.SUBSCRIPTION_PATH}/{subscription.access_key}"
-                await call.message.edit_text(
-                    text=trial_message.format(
-                        subscription_url=subscription_url,
-                        logo_name=settings.LOGO_NAME
-                    ),
-                    disable_web_page_preview=True
-                )
-            else:
-                await call.message.edit_text("❌ Не удалось создать подписку. Попробуйте позже.")
+            subscription = await subscription_service.create_trial_subscription(call.from_user)
+            if subscription is None:
+                await call.message.edit_text("❌ Не удалось создать подписку. Попробуйте позже...")
+                await state.clear()
+                return
+            subscription_url = subscription.subscription_url
+            await call.message.edit_text(
+                text=trial_message.format(
+                    subscription_url=subscription_url,
+                    logo_name=settings.LOGO_NAME
+                ),
+                reply_markup=get_config_webapp_button(subscription_url)
+            )
             await state.clear()
         if profile_action == "new_sub":
-            tariffs = await get_active_tariffs()
+            tariffs = await tariff_service.get_active_tariffs()
             await call.message.edit_text(
                 text=choose_tariff_message,
                 reply_markup=tariff_buttons_buy(tariffs)
             )
             await state.set_state(StepForm.SELECT_TARIFF_BUY)
         if profile_action == "extend":
-            subs_list = await get_active_user_subscription(call.from_user)
+            subs_list = await
             await call.message.edit_text(
                 text=choose_subscription_text_extend,
                 reply_markup=active_subscriptions_buttons(subs_list)

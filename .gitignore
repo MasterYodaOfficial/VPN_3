@@ -1,4 +1,4 @@
-/.env
+/.envex
 /.venv/
 logs/
 *.zip
@@ -17,3 +17,8 @@ logs/
 database/tariffs.json
 /app-config.json
 /app-config_default.json
+/collect_code.py
+/full_project_code.py
+/remnawave-api-v215.json
+/.env
+/test_remna_create.py

@@ -1,58 +1,97 @@
 import os
-from dotenv import load_dotenv
-from pathlib import Path
+from typing import List, Optional
+
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from remnawave import RemnawaveSDK
 
 
+class Settings(BaseSettings):
+    """
+    Класс для управления настройками приложения с использованием Pydantic.
+    Автоматически читает переменные из .envex файла, проверяет их типы и предоставляет
+    удобный объектно-ориентированный доступ.
+    """
+    # --- Настройки путей ---
+    SUBSCRIPTION_PATH: str = "/api/v1/subscription"
+    TEMPLATES_PATHS: str = "app/templates"
+    PAYMENTS_PATH: str = "/payments_gateways"
 
-env_path = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(dotenv_path=env_path)
+    # --- Database ---
+    DATABASE_URL: str  # Pydantic автоматически проверит, что эта переменная есть
+
+    # --- Telegram Bot ---
+    BOT_TOKEN: str
+    BOT_NAME: str
+    SUPPORT_NAME: str
+    SUPPORT_URL: str
+    OWNER_NAME: str
+    ADMINS: List[int]
+
+    # --- Business Logic ---
+    TRIAL_DAYS: int = 3
+    REFERRAL_COMMISSION_PERCENT: int = 50
+
+    # --- Payments ---
+    YOOKASSA_TOKEN: Optional[str] = None
+    YOOKASSA_SHOP_ID: Optional[str] = None
+    CRYPTO_TOKEN: Optional[str] = None
+    TELEGRAM_STARS: bool = False
+    RUB_PER_STAR: float = 1.79
+
+    # --- Infrastructure ---
+    DOMAIN_API: str
+    LOGO_NAME: str
+
+    # --- Remnawave API ---
+    REMNAWAVE_BASE_URL: str
+    REMNAWAVE_TOKEN: str
+
+    # --- Application State Objects (не из .env, будут инициализированы ниже) ---
+    # Мы объявляем их здесь, чтобы иметь доступ через settings.BOT, settings.REMNA_SDK
+    BOT: Optional[Bot] = None
+    DP_BOT: Optional[Dispatcher] = None
+    REMNA_SDK: Optional[RemnawaveSDK] = None
+
+    # Конфигурация Pydantic: указываем, что нужно читать из файла .env
+    model_config = SettingsConfigDict(
+        env_file=os.path.join(os.path.dirname(__file__), '.env'),
+        env_file_encoding='utf-8',
+        extra='ignore'  # Игнорировать лишние переменные в .env
+    )
+
+    def __init__(self, **values):
+        """
+        Инициализатор, который сначала загружает переменные из .envex,
+        а затем инициализирует сложные объекты, такие как Bot и SDK.
+        """
+        super().__init__(**values)
+
+        # --- Инициализация сложных объектов ПОСЛЕ загрузки всех переменных ---
+
+        # 1. Инициализация Aiogram Bot и Dispatcher
+        self.BOT = Bot(token=self.BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
+        self.DP_BOT = Dispatcher()
+        self.REMNA_SDK = RemnawaveSDK(
+            base_url=self.REMNAWAVE_BASE_URL,
+            token=self.REMNAWAVE_TOKEN,
+        )
+
+    @property
+    def WEBHOOK_BOT_PATH(self) -> str:
+        return f"/bot/webhook/{self.BOT_TOKEN}"
+
+    @property
+    def WEBHOOK_BOT_URL(self) -> str:
+        return f"https://{self.DOMAIN_API}{self.WEBHOOK_BOT_PATH}"
+
+    @property
+    def WEBHOOK_SECRET(self) -> str:
+        return self.BOT_TOKEN.split(":")[0]
+
+    # ... другие свойства, если они понадобятся ...
 
 
-class Settings:
-
-
-    DATABASE_URL: str = os.getenv("DATABASE_URL")
-
-    # Telegram Bot
-    BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
-    BOT_NAME: str = os.getenv("BOT_NAME")
-    SUPPORT_NAME: str = os.getenv("SUPPORT_NAME", "Support_VPN")
-    SUPPORT_URL: str = os.getenv("SUPPORT_URL")
-    OWNER_NAME:str = os.getenv("OWNER_NAME")
-    ADMINS = os.getenv("ADMINS", None)
-    ADMIN_IDS = []
-    if ADMINS:
-        ADMIN_IDS = [int(uid.strip()) for uid in ADMINS.split(",") if uid.strip()]
-
-    # Промо-доступ
-    TRIAL_DAYS: int = int(os.getenv("TRIAL_DAYS", 0))
-    REFERRAL_COMMISSION_PERCENT: int = int(os.getenv("REFERRAL_COMMISSION_PERCENT", 10))
-
-    # Варианты оплаты
-    YOOKASSA_TOKEN: str = os.getenv("YOOKASSA_TOKEN", None)
-    if YOOKASSA_TOKEN:
-        YOOKASSA_SHOP_ID: str = os.getenv("YOOKASSA_SHOP_ID")
-    CRYPTO_TOKEN: str = os.getenv("CRYPTO_TOKEN", None)
-    TELEGRAM_STARS: bool = os.getenv("TELEGRAM_STARS", "false").lower() in ("1", "true", "yes")
-    if TELEGRAM_STARS:
-        RUB_PER_STAR: float = float(os.getenv("RUB_PER_STAR", 1.79))
-    DOMAIN_API: str = os.getenv("DOMAIN_API")
-    LOGO_NAME: str = os.getenv("LOGO_NAME")
-
-    # Настройки бота
-    BOT = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
-    DP_BOT = Dispatcher()
-
-    # Настройки путей
-    SUBSCRIPTION_PATH = "/api/v1/subscription"
-    TEMPLATES_PATHS = "app/templates"
-
-    # --- WEBHOOK НАСТРОЙКИ ---
-    PAYMENTS_PATH = "/payments"
-    WEBHOOK_BOT_PATH = f"/bot/webhook/{BOT_TOKEN}"
-    WEBHOOK_BOT_URL = f"https://{DOMAIN_API}{WEBHOOK_BOT_PATH}"
-    WEBHOOK_SECRET = BOT_TOKEN.split(":")[0]
-
+# --- Создаем ЕДИНСТВЕННЫЙ экземпляр настроек для всего приложения ---
 settings = Settings()
