@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     # --- Настройки путей ---
     SUBSCRIPTION_PATH: str = "/api/v1/subscription"
     TEMPLATES_PATHS: str = "app/templates"
-    PAYMENTS_PATH: str = "/payments_gateways"
+    PAYMENTS_PATH: str = "/payments"
 
     # --- Database ---
     DATABASE_URL: str  # Pydantic автоматически проверит, что эта переменная есть
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     SUPPORT_NAME: str
     SUPPORT_URL: str
     OWNER_NAME: str
-    ADMINS: List[int]
+    ADMIN_IDS: List[int]
 
     # --- Business Logic ---
     TRIAL_DAYS: int = 3
@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     # --- Remnawave API ---
     REMNAWAVE_BASE_URL: str
     REMNAWAVE_TOKEN: str
+    REMNAWAVE_WEBHOOK_SECRET: Optional[str] = None
 
     # --- Application State Objects (не из .env, будут инициализированы ниже) ---
     # Мы объявляем их здесь, чтобы иметь доступ через settings.BOT, settings.REMNA_SDK

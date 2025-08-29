@@ -9,14 +9,13 @@ from slowapi import _rate_limit_exceeded_handler
 
 
 from app.api.bot_api import router as bot_router
-from app.api.subscription import subscription_router
 from app.api.head import head_router
 from app.api.media import media_router
 from app.api.payment_webhooks.yookassa import yookassa_router
+from app.api.remnawave_webhook import remna_webhook_router
 from app.bot.bot_logic import setup_bot_logic
 from app.logger import logger
-from database.crud.crud_tariff import load_tariffs_from_json
-from database.crud.crud_server import load_servers_from_json
+from app.services.tariff_service import tariff_service
 
 
 Configuration.account_id = settings.YOOKASSA_SHOP_ID
@@ -25,17 +24,8 @@ Configuration.secret_key = settings.YOOKASSA_TOKEN
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        await load_tariffs_from_json("database/tariffs.json")
-        logger.bind(source="bot").info("Тарифы успешно загружены/обновлены")
-    except Exception as e:
-        logger.bind(source="bot").debug(f"Ошибка при загрузке тарифов: {e}")
 
-    try:
-        await load_servers_from_json("database/servers.json")
-        logger.bind(source="bot").info("Сервера загружены и обновлены")
-    except Exception as e:
-        logger.bind(source="bot").debug(f"Ошибка при загрузке серверов: {e}")
+    await tariff_service.load_and_sync_tariffs("database/tariffs.json")
 
     setup_bot_logic(settings.DP_BOT, settings.BOT)
 
@@ -72,6 +62,6 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.include_router(head_router, tags=["Head"]) # TODO.md можно сделать одностраничник
 app.include_router(bot_router, tags=["Telegram Bot"]) # Бот
-app.include_router(subscription_router, prefix=settings.SUBSCRIPTION_PATH, tags=["Subscription"]) # Подписки
 app.include_router(yookassa_router, tags=["Payment Yookassa"])
 app.include_router(media_router)
+app.include_router(remna_webhook_router, tags=["Remnawave Webhooks"])

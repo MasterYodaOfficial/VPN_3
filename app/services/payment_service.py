@@ -1,5 +1,3 @@
-# app/services/payment_service.py
-
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple, Type
 
@@ -8,9 +6,9 @@ from app.core.config import settings
 from app.logger import logger
 
 # --- Импортируем наши шлюзы и сервисы ---
-from app.payments.base_gateway import BaseGateway
-from app.payments.tg_stars import TelegramStarsGateway
-from app.payments.yookassa import YookassaGateway
+from app.payments_gateways.base_gateway import BaseGateway
+from app.payments_gateways.yookassa_gateway import YooKassaGateway
+from app.payments_gateways.telegram_stars_gateway import TelegramStarsGateway
 from app.services.subscription_service import subscription_service
 
 # --- Импортируем модели напрямую ---
@@ -27,7 +25,7 @@ class PaymentService:
     def __init__(self):
         self.gateways: Dict[PaymentMethod, Type[BaseGateway]] = {}
         if settings.YOOKASSA_TOKEN and settings.YOOKASSA_SHOP_ID:
-            self.gateways[PaymentMethod.yookassa] = YookassaGateway
+            self.gateways[PaymentMethod.yookassa] = YooKassaGateway
         if settings.TELEGRAM_STARS:
             self.gateways[PaymentMethod.tg_stars] = TelegramStarsGateway
         logger.info(f"Зарегистрированные платежные шлюзы: {[gw.name for gw in self.gateways.keys()]}")
@@ -35,6 +33,24 @@ class PaymentService:
     def _get_gateway(self, method: PaymentMethod) -> Optional[BaseGateway]:
         gateway_class = self.gateways.get(method)
         return gateway_class() if gateway_class else None
+
+    async def get_by_external_id(self, external_id: str) -> Optional[Payment]:
+        """
+        Находит платеж в базе данных по его внешнему идентификатору
+        (ID из ЮKassa или payload из Telegram Stars).
+
+        Этот метод "жадно" подгружает связанные данные (подписку, тариф, пользователя),
+        чтобы избежать дополнительных запросов к БД после.
+
+        :param external_id: Внешний ID платежа.
+        :return: Объект Payment или None, если платеж не найден.
+        """
+        async with get_session() as session:
+            payment = await Payment.get_by_external_id(session, external_id)
+            if not payment:
+                logger.warning(f"Попытка найти платеж с несуществующим external_id: {external_id}")
+            return payment
+
 
     async def create_payment_link(
             self,

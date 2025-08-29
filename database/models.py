@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Optional, Self
 
 from sqlalchemy import (
-    String, ForeignKey, func, MetaData, select
+    String, ForeignKey, func, MetaData, select, or_
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship, selectinload
@@ -134,6 +134,30 @@ class Subscription(Base):
     async def get_by_id(cls, session: AsyncSession, sub_id: int) -> Optional[Self]:
         return await session.get(cls, sub_id)
 
+    @classmethod
+    async def get_by_remna_uuid(cls, session: AsyncSession, remna_uuid: str) -> Optional[Self]:
+        """
+        Находит подписку в локальной БД по-полному или короткому UUID из Remnawave.
+
+        Этот метод необходим для обработки вебхуков, так как Remnawave
+        идентифицирует пользователей по своим UUID.
+
+        :param session: Сессия SQLAlchemy.
+        :param remna_uuid: Полный или короткий UUID пользователя из Remnawave.
+        :return: Объект Subscription или None, если ничего не найдено.
+        """
+        stmt = (
+            select(cls)
+            .where(
+                or_(
+                    cls.remnawave_uuid == remna_uuid,
+                    cls.remnawave_short_uuid == remna_uuid
+                )
+            )
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def update(self, session: AsyncSession, **kwargs) -> Self:
         """Обновляет поля текущей подписки."""
         for key, value in kwargs.items():
@@ -157,9 +181,9 @@ class Payment(Base):
     tariff_id: Mapped[int] = mapped_column(ForeignKey("tariffs.id"))
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
-    user: Mapped["User"] = relationship(back_populates="payments_gateways")
-    subscription: Mapped["Subscription"] = relationship(back_populates="payments_gateways")
-    tariff: Mapped["Tariff"] = relationship(back_populates="payments_gateways")
+    user: Mapped["User"] = relationship(back_populates="payments")
+    subscription: Mapped["Subscription"] = relationship(back_populates="payments")
+    tariff: Mapped["Tariff"] = relationship(back_populates="payments")
 
     @classmethod
     async def create(cls, session: AsyncSession, **kwargs) -> Self:

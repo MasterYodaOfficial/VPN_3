@@ -3,7 +3,6 @@ import asyncio
 from typing import Optional, Tuple
 
 from yookassa import Payment
-from yookassa.domain.exceptions import BadRequestError
 
 from app.logger import logger
 from app.core.config import settings

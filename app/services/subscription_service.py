@@ -1,18 +1,60 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 from aiogram.types import User as UserTG
 from app.core.config import settings
 from app.logger import logger
 from app.services.remnawave_service import remna_service
 from database.models import Subscription, User, Tariff
 from database.session import get_session
-from remnawave.models import CreateUserRequestDto
+import re
+from transliterate import translit
 
 
 class SubscriptionService:
     """
     Класс-сервис для управления бизнес-логикой, связанной с подписками.
     """
+
+
+    @staticmethod
+    def normalize_username(name: str, fallback: str = "QuickVPNUser") -> str:
+        """
+        Приводит Telegram first_name к допустимому username для Remnawave.
+        """
+        if not name:
+            return fallback
+        try:
+            name = translit(name, "ru", reversed=True)
+        except Exception as ex:
+            logger.error(ex)
+        name = re.sub(r"[^a-zA-Z0-9_-]", "_", name)
+        name = re.sub(r"_+", "_", name)
+        name = name[:30]
+        if not name.strip("_"):
+            return fallback
+        return name
+
+
+    async def get_active_user_subscriptions(self, user_tg: UserTG) -> Optional[List[Subscription]]:
+        """
+        Возвращает список всех АКТИВНЫХ подписок для указанного пользователя.
+
+        Этот метод идеально подходит для формирования клавиатур и отображения
+        информации в профиле пользователя.
+
+        :param user_tg: Telegram объект пользователя.
+        :return: Список объектов Subscription или пустой список, если ничего не найдено.
+        """
+        async with get_session() as session:
+            user = await User.get_by_telegram_id(session, user_tg.id)
+            if not user:
+                logger.warning(f"Пользователь не найден {user_tg.username} {user_tg.id}")
+                return None
+            if user.active_subscriptions_count == 0:
+                logger.warning(f"У пользователя нет активных подписок {user_tg.username} {user_tg.id}")
+                return None
+            return user.active_subscriptions
+
 
     async def create_trial_subscription(self, user_tg: UserTG) -> Optional[Subscription]:
         """
@@ -37,7 +79,8 @@ class SubscriptionService:
             # 2. Готовим данные для Remnawave.
             # Генерируем уникальное имя подписки для пользователя в панели, чтобы избежать конфликтов
             sub_count = user_db.total_subscriptions_count + 1
-            subscription_name = f"{user_db.username}-{settings.LOGO_NAME}-{sub_count}"
+            tg_user_name = self.normalize_username(user_db.username)
+            subscription_name = f"{tg_user_name}-{settings.LOGO_NAME}-{sub_count}"
             expire_date = datetime.now() + timedelta(days=settings.TRIAL_DAYS)
             # 3. Вызываем сервис для создания пользователя в Remnawave
             remna_user = await remna_service.create_user_subscription(
@@ -54,8 +97,8 @@ class SubscriptionService:
                 telegram_id=user_db.telegram_id,
                 end_date=expire_date,
                 subscription_name=subscription_name,
-                remnawave_uuid=remna_user.uuid,
-                remnawave_short_uuid=remna_user.short_uuid,
+                remnawave_uuid=str(remna_user.uuid),
+                remnawave_short_uuid=str(remna_user.short_uuid),
                 subscription_url=remna_user.subscription_url,
                 is_active=True
             )
@@ -77,7 +120,8 @@ class SubscriptionService:
         """
         async with get_session() as session:
             sub_count = user_db.total_subscriptions_count + 1
-            subscription_name = f"{user_db.username}-{settings.LOGO_NAME}-{sub_count}"
+            tg_user_name = self.normalize_username(user_db.username)
+            subscription_name = f"{tg_user_name}-{settings.LOGO_NAME}-{sub_count}"
             expire_date = datetime.now() - timedelta(days=1)
             # Создаем пользователя в Remnawave с датой окончания "в прошлом",
             # чтобы он был неактивен до момента оплаты.
@@ -95,15 +139,26 @@ class SubscriptionService:
                 telegram_id=user_db.telegram_id,
                 end_date=expire_date,
                 subscription_name=subscription_name,
-                remnawave_uuid=remna_user.uuid,
-                remnawave_short_uuid=remna_user.short_uuid,
+                remnawave_uuid=str(remna_user.uuid),
+                remnawave_short_uuid=str(remna_user.short_uuid),
                 subscription_url=remna_user.subscription_url,
                 is_active=False,
                 tariff_id=tariff.id
             )
             return subscription
 
+    async def get_by_remna_uuid(self, remna_uuid: str) -> Optional[Subscription]:
+        """
+        Находит локальную запись о подписке по ее UUID из Remnawave.
 
+        :param remna_uuid: Полный или короткий UUID пользователя из Remnawave.
+        :return: Объект Subscription или None.
+        """
+        async with get_session() as session:
+            subscription = await Subscription.get_by_remna_uuid(session, remna_uuid)
+            if not subscription:
+                logger.warning(f"Попытка найти подписку по несуществующему remna_uuid: {remna_uuid}")
+            return subscription
 
     # Здесь в будущем будут другие методы:
     # async def extend_subscription(self, sub_id: int, tariff_id: int) -> Optional[Subscription]: ...

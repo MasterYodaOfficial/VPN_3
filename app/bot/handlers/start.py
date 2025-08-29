@@ -1,6 +1,5 @@
 from aiogram.types import Message, FSInputFile
 from aiogram.fsm.context import FSMContext
-from app.services.user_service import register_user_service
 from app.bot.utils.messages import start_message, first_trial_message
 from app.logger import logger
 from app.core.config import settings

@@ -4,6 +4,8 @@ from typing import List, Optional
 from app.logger import logger
 from database.models import Tariff
 from database.session import get_session
+from sqlalchemy import select
+
 
 
 class TariffService:

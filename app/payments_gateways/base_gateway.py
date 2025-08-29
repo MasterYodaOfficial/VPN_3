@@ -22,13 +22,3 @@ class BaseGateway(ABC):
         :return: Кортеж (external_id, payment_url) или None в случае ошибки.
         """
         pass
-
-    @abstractmethod
-    async def cancel_payment(self, external_payment_id: str) -> bool:
-        """
-        Отменяет платеж во внешней системе.
-
-        :param external_payment_id: ID платежа во внешней системе.
-        :return: True в случае успешной отмены, иначе False.
-        """
-        pass

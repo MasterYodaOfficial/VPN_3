@@ -5,6 +5,29 @@ from database.models import Subscription, Tariff
 from typing import List
 
 
+def user_subscriptions_webapp_buttons(sub_list: List[Subscription]) -> InlineKeyboardMarkup:
+    """
+    Формирует клавиатуру со списком активных подписок пользователя.
+    Для каждой подписки создается кнопка, открывающая Web App.
+    """
+    kb = InlineKeyboardBuilder()
+
+    # Проходимся по каждой подписке из списка
+    for sub in sub_list:
+
+        expires_date = sub.end_date.strftime("%d.%m.%Y")
+        button_text = f"📱 {sub.subscription_name} (до {expires_date})"
+
+        # Создаем и добавляем кнопку Web App в билдер
+        kb.button(
+            text=button_text,
+            web_app=WebAppInfo(url=sub.subscription_url)
+        )
+
+    # Располагаем кнопки по одной в строке для лучшей читаемости
+    kb.adjust(1)
+
+    return kb.as_markup()
 def get_config_webapp_button(webapp_url: str) -> InlineKeyboardMarkup:
     """Создает кнопку для открытия Web App с конфигурацией."""
     buttons = [
@@ -39,9 +62,9 @@ def active_subscriptions_buttons(sub_list: List[Subscription]) -> InlineKeyboard
     """Формирует кнопки активных подписок"""
     kb = InlineKeyboardBuilder()
     for sub in sub_list:
-        server_name = sub.service_name
+        subscription_name = sub.subscription_name
         expires = sub.end_date.strftime("%d.%m.%y")
-        label = f"🛡️ {server_name} • до {expires}"
+        label = f"🛡️ {subscription_name} • до {expires}"
         kb.button(
             text=label,
             callback_data=f"renew:{sub.id}"

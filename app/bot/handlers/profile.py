@@ -4,24 +4,20 @@ from app.bot.utils.messages import (profile_message, choose_subscription_text_ex
                                     choose_tariff_message, payment_message,
                                     trial_message, active_configs_list_message)
 from app.logger import logger
-from app.services.user_service import register_user_service
 from app.bot.keyboards.inlines import (profile_buttons, active_subscriptions_buttons, payments_buttons,
                                        tariff_buttons, make_pay_link_button, tariff_buttons_buy,
-                                       get_config_webapp_button)
+                                       get_config_webapp_button, user_subscriptions_webapp_buttons)
 from app.bot.utils.statesforms import StepForm
-from app.services.generator_subscriptions import (get_active_user_subscription)
-from database.crud.crud_tariff import get_active_tariffs
-from app.services.payment import (create_payment_service)
-
 from app.core.config import settings
 from app.services.subscription_service import subscription_service
 from app.services.tariff_service import tariff_service
-
+from app.services.user_service import user_service
+from app.services.payment_service import payment_service
 
 
 async def profile_command(message: Message, state: FSMContext):
     logger.bind(source="bot").info(f"{message.from_user.id} {message.from_user.first_name}")
-    user_db = await register_user_service(message)
+    user_db = await user_service.register_or_update_user(message)
     await message.answer(
         text=profile_message.format(
             referral_earnings=user_db.balance,
@@ -65,33 +61,30 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
             )
             await state.set_state(StepForm.SELECT_TARIFF_BUY)
         if profile_action == "extend":
-            subs_list = await
-            await call.message.edit_text(
-                text=choose_subscription_text_extend,
-                reply_markup=active_subscriptions_buttons(subs_list)
-            )
-            await state.set_state(StepForm.CHOOSE_EXTEND_SUBSCRIPTION)
-        if profile_action == "get_conf":
-            subs_list = await get_active_user_subscription(call.from_user)
+            subs_list = await subscription_service.get_active_user_subscriptions(call.from_user)
             if not subs_list:
                 await call.message.edit_text(
                     text="У вас нет активных подписок"
                 )
                 await state.clear()
                 return
-            subscriptions_text_list = []
-            for sub in subs_list:
-                base_url = f"https://{settings.DOMAIN_API}/api/v1/subscription/{sub.access_key}"
-                subscriptions_text_list.append(
-                    f"<b>Подписка:</b> <code>{sub.service_name}</code>\n"
-                    f"<b>Истекает:</b> {sub.end_date.strftime('%d.%m.%Y')}\n"
-                    f"<b>Ссылка:</b> <code>{base_url}</code>\n"
-                )
-
-            final_text = active_configs_list_message.format(
-                subscriptions_list="\n".join(subscriptions_text_list)
+            await call.message.edit_text(
+                text=choose_subscription_text_extend,
+                reply_markup=active_subscriptions_buttons(subs_list)
             )
-            await call.message.edit_text(text=final_text, disable_web_page_preview=True)
+            await state.set_state(StepForm.CHOOSE_EXTEND_SUBSCRIPTION)
+        if profile_action == "get_conf":
+            subs_list = await subscription_service.get_active_user_subscriptions(call.from_user)
+            if not subs_list:
+                await call.message.edit_text(
+                    text="У вас нет активных подписок"
+                )
+                await state.clear()
+                return
+            await call.message.edit_text(
+                text=active_configs_list_message,
+                reply_markup=user_subscriptions_webapp_buttons(subs_list)
+            )
             await state.clear()
             return
     else:
@@ -102,7 +95,7 @@ async def get_subscription_extend(call: CallbackQuery, state: FSMContext):
     if call.data.startswith("renew"):
         _, sub_id = call.data.split(":")
         await state.update_data(sub_id=int(sub_id))
-        tariffs = await get_active_tariffs()
+        tariffs = await tariff_service.get_active_tariffs()
         await call.message.edit_text(
             text=choose_tariff_message,
             reply_markup=tariff_buttons(tariffs)
@@ -131,11 +124,11 @@ async def get_payment_method_extend(call: CallbackQuery, state: FSMContext):
         data = await state.get_data()
         tariff_id = data["tariff_id"]
         sub_id = data["sub_id"]
-        payment_data = await create_payment_service(
-            user=call.from_user,
+        payment_data = await payment_service.create_payment_link(
+            user_tg=call.from_user,
             tariff_id=tariff_id,
-            sub_id=sub_id,
-            method=payment_method
+            method_str=payment_method,
+            sub_id_to_extend=sub_id
         )
         if not payment_data:
             await call.answer("❌ Не удалось создать платеж. Попробуйте позже.", show_alert=True)
@@ -172,10 +165,10 @@ async def get_payment_method_buy(call: CallbackQuery, state: FSMContext):
         _, payment_method = call.data.split(":")
         data = await state.get_data()
         tariff_id = data["tariff_id"]
-        payment_data = await create_payment_service(
-            user=call.from_user,
+        payment_data = await payment_service.create_payment_link(
+            user_tg=call.from_user,
             tariff_id=tariff_id,
-            method=payment_method
+            method_str=payment_method
         )
         if not payment_data:
             await call.answer("❌ Не удалось создать платеж. Попробуйте позже.", show_alert=True)
