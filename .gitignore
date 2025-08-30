@@ -22,3 +22,6 @@ database/tariffs.json
 /remnawave-api-v215.json
 /.env
 /test_remna_create.py
+/user.modified.json
+/users.created.json
+/node.disabled.json

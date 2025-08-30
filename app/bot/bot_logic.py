@@ -11,7 +11,7 @@ from app.logger import logger
 from app.bot.utils.throttling import ThrottlingMiddleware
 from app.bot.utils.statesforms import StepForm
 from app.bot.handlers.stars_handlers import pre_checkout_handler, successful_payment_handler
-
+from app.bot.middlewares.i18n import i18n_middleware
 
 
 def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
@@ -23,6 +23,8 @@ def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
     # Антиспам
     dp.message.middleware(ThrottlingMiddleware(limit=0.2))
     dp.callback_query.middleware(ThrottlingMiddleware(limit=0.2))
+    # Переводчик
+    dp.update.middleware(i18n_middleware)
 
     # Команды юзеров
     dp.message.register(start_command, Command('start'))

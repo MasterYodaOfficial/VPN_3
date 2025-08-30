@@ -1,8 +1,5 @@
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
-from app.bot.utils.messages import (profile_message, choose_subscription_text_extend, choose_payment_message,
-                                    choose_tariff_message, payment_message,
-                                    trial_message, active_configs_list_message)
 from app.logger import logger
 from app.bot.keyboards.inlines import (profile_buttons, active_subscriptions_buttons, payments_buttons,
                                        tariff_buttons, make_pay_link_button, tariff_buttons_buy,
@@ -13,13 +10,14 @@ from app.services.subscription_service import subscription_service
 from app.services.tariff_service import tariff_service
 from app.services.user_service import user_service
 from app.services.payment_service import payment_service
+from aiogram.utils.i18n import gettext as _
 
 
 async def profile_command(message: Message, state: FSMContext):
     logger.bind(source="bot").info(f"{message.from_user.id} {message.from_user.first_name}")
     user_db = await user_service.register_or_update_user(message)
     await message.answer(
-        text=profile_message.format(
+        text=_("profile_message").format(
             referral_earnings=user_db.balance,
             active_subscriptions_count=user_db.active_subscriptions_count
         ),
@@ -38,15 +36,17 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
     if call.data.startswith("profile"):
         _, profile_action = call.data.split(":")
         if profile_action == "trial":
-            await call.message.edit_text("⏳ Генерируем пробную подписку...")
+            # "⏳ Генерируем пробную подписку..."
+            await call.message.edit_text(_("generating_subs"))
             subscription = await subscription_service.create_trial_subscription(call.from_user)
             if subscription is None:
-                await call.message.edit_text("❌ Не удалось создать подписку. Попробуйте позже...")
+                # "❌ Не удалось создать подписку. Попробуйте позже..."
+                await call.message.edit_text(_("error_subs_create"))
                 await state.clear()
                 return
             subscription_url = subscription.subscription_url
             await call.message.edit_text(
-                text=trial_message.format(
+                text=_("trial_message").format(
                     subscription_url=subscription_url,
                     logo_name=settings.LOGO_NAME
                 ),
@@ -56,7 +56,7 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
         if profile_action == "new_sub":
             tariffs = await tariff_service.get_active_tariffs()
             await call.message.edit_text(
-                text=choose_tariff_message,
+                text=_("choose_tariff_message"),
                 reply_markup=tariff_buttons_buy(tariffs)
             )
             await state.set_state(StepForm.SELECT_TARIFF_BUY)
@@ -64,12 +64,13 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
             subs_list = await subscription_service.get_active_user_subscriptions(call.from_user)
             if not subs_list:
                 await call.message.edit_text(
-                    text="У вас нет активных подписок"
+                    # "У вас нет активных подписок"
+                    text=_("not_subs")
                 )
                 await state.clear()
                 return
             await call.message.edit_text(
-                text=choose_subscription_text_extend,
+                text=_("choose_subscription_text_extend"),
                 reply_markup=active_subscriptions_buttons(subs_list)
             )
             await state.set_state(StepForm.CHOOSE_EXTEND_SUBSCRIPTION)
@@ -77,12 +78,12 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
             subs_list = await subscription_service.get_active_user_subscriptions(call.from_user)
             if not subs_list:
                 await call.message.edit_text(
-                    text="У вас нет активных подписок"
+                    text=_("not_subs")
                 )
                 await state.clear()
                 return
             await call.message.edit_text(
-                text=active_configs_list_message,
+                text=_("active_configs_list_message"),
                 reply_markup=user_subscriptions_webapp_buttons(subs_list)
             )
             await state.clear()
@@ -97,7 +98,7 @@ async def get_subscription_extend(call: CallbackQuery, state: FSMContext):
         await state.update_data(sub_id=int(sub_id))
         tariffs = await tariff_service.get_active_tariffs()
         await call.message.edit_text(
-            text=choose_tariff_message,
+            text=_("choose_tariff_message"),
             reply_markup=tariff_buttons(tariffs)
         )
         await state.set_state(StepForm.SELECT_TARIFF_EXTEND)
@@ -110,7 +111,7 @@ async def get_tariff_extend(call: CallbackQuery, state: FSMContext):
         _, tariff_id = call.data.split(":")
         await state.update_data(tariff_id=int(tariff_id))
         await call.message.edit_text(
-            text=choose_payment_message,
+            text=_("choose_payment_message"),
             reply_markup=payments_buttons()
         )
         await state.set_state(StepForm.PAYMENT_METHOD_EXTEND)
@@ -131,12 +132,12 @@ async def get_payment_method_extend(call: CallbackQuery, state: FSMContext):
             sub_id_to_extend=sub_id
         )
         if not payment_data:
-            await call.answer("❌ Не удалось создать платеж. Попробуйте позже.", show_alert=True)
+            await call.answer(_("error_payment"), show_alert=True)
             await state.clear()
             return
         payment, tariff, subscription, payment_url = payment_data
         await call.message.edit_text(
-            text=payment_message.format(
+            text=_("payment_message").format(
                 tariff_name=tariff.name,
                 amount=tariff.price
             ),
@@ -152,7 +153,7 @@ async def get_tariff_buy(call: CallbackQuery, state: FSMContext):
         _, tariff_id = call.data.split(":")
         await state.update_data(tariff_id=int(tariff_id))
         await call.message.edit_text(
-            text=choose_payment_message,
+            text=_("choose_payment_message"),
             reply_markup=payments_buttons()
         )
         await state.set_state(StepForm.PAYMENT_METHOD_BUY)
@@ -171,12 +172,12 @@ async def get_payment_method_buy(call: CallbackQuery, state: FSMContext):
             method_str=payment_method
         )
         if not payment_data:
-            await call.answer("❌ Не удалось создать платеж. Попробуйте позже.", show_alert=True)
+            await call.answer(_("error_payment"), show_alert=True)
             await state.clear()
             return
         payment, tariff, subscription, payment_url = payment_data
         await call.message.edit_text(
-            text=payment_message.format(
+            text=_("payment_message").format(
                 tariff_name=tariff.name,
                 amount=tariff.price
             ),

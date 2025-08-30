@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     TEMPLATES_PATHS: str = "app/templates"
     PAYMENTS_PATH: str = "/payments"
 
+    # --- Языковые настройки ---
+    LOCALES_DIR = "locales"
+    DEFAULT_LANGUAGE: str
+
+
     # --- Database ---
     DATABASE_URL: str  # Pydantic автоматически проверит, что эта переменная есть
 

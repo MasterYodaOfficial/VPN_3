@@ -4,7 +4,10 @@ from database.session import get_session
 from app.core.config import settings
 from app.bot.utils.messages import subscription_deactivated_message, subscription_expiration_warning_message
 from app.services.subscription_service import subscription_service
-
+from database.models import User, Subscription
+from app.services.user_service import _generate_referral_code
+from app.bot.utils.messages import welcome_message_universal
+from app.bot.keyboards.inlines import get_config_webapp_button
 
 
 class UserEventsHandler:
@@ -12,7 +15,60 @@ class UserEventsHandler:
     Класс для обработки всех событий, связанных с пользователями (user.*).
     """
 
-    async def user_expired(self, payload: Dict[str, Any]):
+    async def created(self, payload: Dict[str, Any]):
+        user_data = payload.get("data", {})
+        remna_uuid = user_data.get("uuid")
+
+        if not remna_uuid:
+            logger.warning("Вебхук 'user.created' пришел с неполными данными. Обработка невозможна.")
+            return
+
+        async with get_session() as session:
+            existing_sub = await Subscription.get_by_remna_uuid(session, remna_uuid)
+            if existing_sub:
+                logger.info(f"Подписка с remna_uuid={remna_uuid} уже существует. Синхронизация не требуется.")
+                return
+            subscription_from_remna = await settings.REMNA_SDK.users.get_user_by_uuid(remna_uuid)
+            logger.info(f"WEBHOOK: 'user.created' для {subscription_from_remna.username}")
+            user_db = await User.get_by_telegram_id(session, subscription_from_remna.telegram_id)
+            if not user_db:
+                logger.info(f"Пользователь с tg_id={subscription_from_remna.telegram_id} не найден. Создаем нового.")
+                while True:
+                    new_ref_code = _generate_referral_code()
+                    if not await User.get_by_referral_code(session, new_ref_code): break
+
+                user_db = await User.create(
+                    session=session, telegram_id=subscription_from_remna.telegram_id,
+                    username=subscription_from_remna.username, referral_code=new_ref_code,
+                    is_admin=(subscription_from_remna.telegram_id in settings.ADMIN_IDS)
+                )
+            new_subscription = await Subscription.create(
+                session=session, telegram_id=subscription_from_remna.telegram_id,
+                start_date=subscription_from_remna.created_at,
+                end_date=subscription_from_remna.expire_at,
+                subscription_name=subscription_from_remna.username,
+                remnawave_uuid=str(subscription_from_remna.uuid),
+                remnawave_short_uuid=subscription_from_remna.short_uuid,
+                subscription_url=subscription_from_remna.subscription_url,
+                is_active=True
+            )
+            logger.info(f"Создана локальная подписка ID:{new_subscription.id} для синхронизации с Remnawave.")
+
+            try:
+                await settings.BOT.send_message(
+                    chat_id=subscription_from_remna.telegram_id,
+                    text=welcome_message_universal.format(
+                        subscription_url=subscription_from_remna.subscription_url,
+                        logo_name=settings.LOGO_NAME
+                    ),
+                    reply_markup=get_config_webapp_button(subscription_from_remna.subscription_url)
+                )
+                logger.info(f"Отправлено приветственное сообщение пользователю {subscription_from_remna.telegram_id}.")
+            except Exception as e:
+                logger.error(f"Не удалось отправить сообщение пользователю {subscription_from_remna.telegram_id}: {e}")
+
+
+    async def expired(self, payload: Dict[str, Any]):
         user_data = payload.get("data", {})
         remna_uuid = user_data.get("shortUuid")
         telegram_id = user_data.get("telegramId")
@@ -36,7 +92,7 @@ class UserEventsHandler:
         except Exception as e:
             logger.warning(f"Не удалось отправить уведомление о 'user.expired' пользователю {telegram_id}: {e}")
 
-    async def user_expires_in_24_hours(self, payload: Dict[str, Any]):
+    async def expires_in_24_hours(self, payload: Dict[str, Any]):
         user_data = payload.get("data", {})
         remna_uuid = user_data.get("shortUuid")
         telegram_id = user_data.get("telegramId")
@@ -55,7 +111,7 @@ class UserEventsHandler:
             )
         except Exception as e:
             logger.warning(
-                f"Не удалось отправить уведомление о 'user.expires_in_24_hours' пользователю {telegram_id}: {e}")
+                f"Не удалось отправить уведомление о 'user.expires_in_24_hours' пользователю {subscription.telegram_id}: {e}")
 
     async def _unhandled_event(self, event_name: str, payload: Dict[str, Any]):
         """Обрабатывает любое другое событие пользователя, для которого нет метода."""

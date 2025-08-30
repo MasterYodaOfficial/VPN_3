@@ -8,6 +8,7 @@ from app.logger import logger
 
 from database.models import User
 from database.session import get_session
+from aiogram.utils.i18n import I18n
 
 
 def _generate_referral_code(length: int = 8) -> str:
@@ -70,6 +71,9 @@ class UserService:
                     break
 
             # Создаем пользователя, используя метод модели
+            lang_code = user_from_tg.language_code
+            if lang_code not in I18n.available_locales: # Проверяем по списку доступных
+                lang_code = settings.DEFAULT_LANGUAGE
             new_user = await User.create(
                 session=session,
                 telegram_id=user_from_tg.id,
@@ -77,6 +81,7 @@ class UserService:
                 link=user_from_tg.username,
                 inviter_id=inviter_id,
                 referral_code=new_referral_code,
+                language_code=lang_code,
                 is_admin=(user_from_tg.id in settings.ADMIN_IDS),  # Сразу назначаем админа
                 has_trial=(settings.TRIAL_DAYS > 0)  # Устанавливаем флаг триала на основе настроек
             )

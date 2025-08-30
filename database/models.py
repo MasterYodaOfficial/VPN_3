@@ -37,6 +37,8 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(default=False)
     has_trial: Mapped[bool] = mapped_column(default=True)
     had_first_purchase: Mapped[bool] = mapped_column(default=False)
+    # --- НОВОЕ ПОЛЕ ---
+    language_code: Mapped[str] = mapped_column(String(5), default="ru")
 
     # --- Связи (relationships) с типами ---
     inviter: Mapped[Optional["User"]] = relationship(remote_side=[telegram_id], back_populates="invited_users")
