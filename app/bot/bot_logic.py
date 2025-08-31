@@ -13,7 +13,7 @@ from app.bot.utils.statesforms import StepForm
 from app.bot.handlers.stars_handlers import pre_checkout_handler, successful_payment_handler
 from app.bot.middlewares.i18n import i18n_middleware
 from app.bot.handlers.language import router as language_router
-from app.bot.handlers.for_admins import broadcast, refund
+from app.bot.handlers.for_admins import broadcast, refund, statistics
 
 
 def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
@@ -41,7 +41,7 @@ def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
     admin_router = Router(name="admin_commands")
     admin_router.include_router(broadcast.router)
     admin_router.include_router(refund.router)
-
+    admin_router.include_router(statistics.router)
 
     dp.include_router(admin_router)
 

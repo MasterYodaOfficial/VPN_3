@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from app.logger import logger
 from database.session import get_session
 from app.core.config import settings
@@ -31,6 +31,9 @@ class UserEventsHandler:
                 return
             subscription_from_remna = await settings.REMNA_SDK.users.get_user_by_uuid(remna_uuid)
             logger.info(f"WEBHOOK: 'user.created' для {subscription_from_remna.username}")
+            if not subscription_from_remna.telegram_id:
+                logger.info(f"Подписка с remna_uuid={remna_uuid} без телеграмма")
+                return
             user_db = await User.get_by_telegram_id(session, subscription_from_remna.telegram_id)
             if not user_db:
                 logger.info(f"Пользователь с tg_id={subscription_from_remna.telegram_id} не найден. Создаем нового.")
@@ -61,7 +64,6 @@ class UserEventsHandler:
                     await settings.BOT.send_message(
                         chat_id=subscription_from_remna.telegram_id,
                         text=_("welcome_message_universal").format(
-                            subscription_url=subscription_from_remna.subscription_url,
                             logo_name=settings.LOGO_NAME
                         ),
                         reply_markup=get_config_webapp_button(subscription_from_remna.subscription_url)
@@ -69,6 +71,21 @@ class UserEventsHandler:
                     logger.info(f"Отправлено приветственное сообщение пользователю {subscription_from_remna.telegram_id}.")
             except Exception as e:
                 logger.error(f"Не удалось отправить сообщение пользователю {subscription_from_remna.telegram_id}: {e}")
+
+
+    async def modified(self, payload: Dict[str, Any]):
+        user_data = payload.get("data", {})
+        remna_uuid = user_data.get("uuid")
+        subscription_from_remna = await settings.REMNA_SDK.users.get_user_by_uuid(remna_uuid)
+        logger.info(f"WEBHOOK: Получено событие 'user.modified' для подписки {subscription_from_remna.username} ({subscription_from_remna.telegram_id})")
+        async with get_session() as session:
+            subscription_from_db = await Subscription.get_by_remna_uuid(session, remna_uuid)
+            if subscription_from_db:
+                await subscription_from_db.update(
+                    session=session,
+                    end_date=subscription_from_remna.expire_at
+                )
+                logger.info(f"Данные обновлены {subscription_from_remna.username} {subscription_from_remna.expire_at}")
 
 
     async def expired(self, payload: Dict[str, Any]):
