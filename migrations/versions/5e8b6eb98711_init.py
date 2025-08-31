@@ -1,8 +1,8 @@
-"""Initial database schema with all models
+"""init
 
-Revision ID: 58dd296cf45a
+Revision ID: 5e8b6eb98711
 Revises: 
-Create Date: 2025-08-28 22:16:59.547105
+Create Date: 2025-08-31 23:22:58.851337
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '58dd296cf45a'
+revision: str = '5e8b6eb98711'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -53,6 +53,7 @@ def upgrade() -> None:
     sa.Column('is_admin', sa.Boolean(), nullable=False),
     sa.Column('has_trial', sa.Boolean(), nullable=False),
     sa.Column('had_first_purchase', sa.Boolean(), nullable=False),
+    sa.Column('language_code', sa.String(length=5), nullable=False),
     sa.ForeignKeyConstraint(['inviter_id'], ['users.telegram_id'], name=op.f('fk_users_inviter_id_users')),
     sa.PrimaryKeyConstraint('telegram_id', name=op.f('pk_users'))
     )
@@ -63,7 +64,7 @@ def upgrade() -> None:
     sa.Column('telegram_id', sa.Integer(), nullable=False),
     sa.Column('start_date', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('end_date', sa.DateTime(), nullable=False),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('status', sa.Enum('ACTIVE', 'DISABLED', 'LIMITED', 'EXPIRED', name='subscriptionstatus'), nullable=False),
     sa.Column('remnawave_uuid', sa.String(length=36), nullable=False),
     sa.Column('remnawave_short_uuid', sa.String(length=48), nullable=False),
     sa.Column('subscription_name', sa.String(), nullable=False),
@@ -88,11 +89,11 @@ def upgrade() -> None:
     sa.Column('subscription_id', sa.Integer(), nullable=False),
     sa.Column('tariff_id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.ForeignKeyConstraint(['subscription_id'], ['subscriptions.id'], name=op.f('fk_payments_subscription_id_subscriptions')),
-    sa.ForeignKeyConstraint(['tariff_id'], ['tariffs.id'], name=op.f('fk_payments_tariff_id_tariffs')),
-    sa.ForeignKeyConstraint(['user_id'], ['users.telegram_id'], name=op.f('fk_payments_user_id_users')),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_payments')),
-    sa.UniqueConstraint('external_payment_id', name=op.f('uq_payments_external_payment_id'))
+    sa.ForeignKeyConstraint(['subscription_id'], ['subscriptions.id'], name=op.f('fk_payments_gateways_subscription_id_subscriptions')),
+    sa.ForeignKeyConstraint(['tariff_id'], ['tariffs.id'], name=op.f('fk_payments_gateways_tariff_id_tariffs')),
+    sa.ForeignKeyConstraint(['user_id'], ['users.telegram_id'], name=op.f('fk_payments_gateways_user_id_users')),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_payments_gateways')),
+    sa.UniqueConstraint('external_payment_id', name=op.f('uq_payments_gateways_external_payment_id'))
     )
     # ### end Alembic commands ###
 

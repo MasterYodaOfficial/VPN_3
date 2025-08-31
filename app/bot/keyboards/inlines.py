@@ -149,23 +149,26 @@ def broadcast_confirmation_buttons() -> InlineKeyboardMarkup:
     return kb.as_markup()
 
 
+# app/bot/keyboards/inlines.py
+
+# ...
+
 def admin_panel_buttons() -> InlineKeyboardMarkup:
     """Кнопки для главной панели администратора."""
     kb = InlineKeyboardBuilder()
-    kb.button(text="📊 Общая сводка", callback_data="admin_stats:general")
-    kb.button(text="💰 Финансы", callback_data="admin_stats:finance")
-    kb.button(text="👥 Пользователи", callback_data="admin_stats:users")
-    kb.button(text="🚀 Подписки", callback_data="admin_stats:subs")
-    kb.button(text="🗣️ Рефералы", callback_data="admin_stats:referrals")
-    kb.button(text="🖥️ Состояние серверов", callback_data="admin_stats:servers")
-    kb.button(text="🖥️ Синхронизация конфигов", callback_data="admin_stats:sync_configs")
-    kb.adjust(2, 2, 2, 1)
+    kb.button(text="📊 Общая сводка", callback_data="admin:general")
+    # Добавляем кнопки-заглушки
+    kb.button(text="💰 Финансы", callback_data="admin:finance")
+    kb.button(text="👥 Пользователи", callback_data="admin:users")
+    kb.button(text="🗣️ Рефералы", callback_data="admin:referrals")
+    kb.button(text="📣 Рассылка", callback_data="admin:broadcast")
+    kb.adjust(1, 2, 2)
     return kb.as_markup()
 
 def back_to_admin_panel_button() -> InlineKeyboardMarkup:
     """Кнопка для возврата в главную админ-панель."""
     kb = InlineKeyboardBuilder()
-    kb.button(text="⬅️ Назад в админ-панель", callback_data="admin_stats:back")
+    kb.button(text="⬅️ Назад в админ-панель", callback_data="admin:back")
     return kb.as_markup()
 
 def language_selection_buttons() -> InlineKeyboardMarkup:
