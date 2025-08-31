@@ -1,4 +1,4 @@
-from aiogram import Dispatcher, Bot, F
+from aiogram import Dispatcher, Bot, F, Router
 from app.bot.handlers.start import start_command
 from app.bot.handlers.about import about_command
 from app.bot.handlers.profile import (profile_command, get_action_profile, get_subscription_extend,
@@ -12,6 +12,8 @@ from app.bot.utils.throttling import ThrottlingMiddleware
 from app.bot.utils.statesforms import StepForm
 from app.bot.handlers.stars_handlers import pre_checkout_handler, successful_payment_handler
 from app.bot.middlewares.i18n import i18n_middleware
+from app.bot.handlers.language import router as language_router
+from app.bot.handlers.for_admins import broadcast, refund
 
 
 def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
@@ -32,15 +34,16 @@ def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
     dp.message.register(profile_command, Command('profile'))
     dp.message.register(referral_command, Command('referral'))
     dp.message.register(help_command, Command('help'))
+    # Смена языка
+    dp.include_router(language_router)
 
-    # # Админки TODO тут тоже админки перелопатить нужно
-    # dp.message.register(broadcast.broadcast_command, Command('broadcast'))
-    # dp.message.register(statistics.admin_command, Command('admin'))
-    # dp.message.register(revorke_stars.refund_command, Command('refund'))
-    # dp.callback_query.register(broadcast.broadcast_command, F.data == "admin_broadcast_start")
-    # dp.message.register(broadcast.receive_broadcast_message, StepForm.WAITING_BROADCAST_MESSAGE)
-    # dp.callback_query.register(broadcast.confirm_broadcast_handler, StepForm.CONFIRM_BROADCAST)
-    # dp.callback_query.register(statistics.navigate_admin_panel, F.data.startswith("admin_stats:"))
+    # --- Админские команды ---
+    admin_router = Router(name="admin_commands")
+    admin_router.include_router(broadcast.router)
+    admin_router.include_router(refund.router)
+
+
+    dp.include_router(admin_router)
 
 
     # Движения и Callbacks с /profile
@@ -65,6 +68,6 @@ def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
 
 
     # --- Настройка и запуск планировщиков ---
-    # TODO Тут планировщики возможно вообще не понадобяться, будем через вебхуки принимать события от панели Ремна
+
 
     logger.info("Инициализация бота выполнена, старт...")

@@ -17,7 +17,6 @@ async def navigate_help_menu(call: CallbackQuery):
 
     if action == "install":
         await call.message.edit_text(
-            # "Выберите вашу операционную систему:"
             text=_("choose_sys"),
             reply_markup=install_menu_buttons()
         )

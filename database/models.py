@@ -3,16 +3,13 @@ from datetime import datetime
 from typing import List, Optional, Self
 
 from sqlalchemy import (
-    String, ForeignKey, func, MetaData, select, or_
+    String, ForeignKey, func, MetaData, select, or_, Enum
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship, selectinload
 
-from .enums import PaymentMethod
-from database.session import get_session
-# --- Настройка базового класса с конвенцией именования ---
-# Это стандартная практика, чтобы ключи и индексы в БД
-# именовались одинаково и предсказуемо.
+from .enums import PaymentMethod, SubscriptionStatus
+
 naming_convention = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
@@ -48,7 +45,11 @@ class User(Base):
 
     @property
     def active_subscriptions(self) -> List["Subscription"]:
-        return [sub for sub in self.subscriptions if sub.is_active]
+        return [sub for sub in self.subscriptions if sub.status == SubscriptionStatus.ACTIVE]
+
+    @property
+    def all_subscriptions(self) -> List["Subscription"]:
+        return [sub for sub in self.subscriptions]
 
     @property
     def total_subscriptions_count(self) -> int:
@@ -63,6 +64,12 @@ class User(Base):
         return len(self.invited_users)
 
     # --- CRUD МЕТОДЫ ДЛЯ МОДЕЛИ USER ---
+    @classmethod
+    async def get_all_telegram_ids(cls, session: AsyncSession) -> List[int]:
+        """Возвращает список всех telegram_id пользователей."""
+        stmt = select(cls.telegram_id)
+        result = await session.execute(stmt)
+        return result.scalars().all()
 
     @classmethod
     async def get_by_telegram_id(cls, session: AsyncSession, telegram_id: int) -> Optional[Self]:
@@ -111,7 +118,11 @@ class Subscription(Base):
     telegram_id: Mapped[int] = mapped_column(ForeignKey("users.telegram_id"))
     start_date: Mapped[datetime] = mapped_column(server_default=func.now())
     end_date: Mapped[datetime]
-    is_active: Mapped[bool] = mapped_column(default=True)
+    status: Mapped[SubscriptionStatus] = mapped_column(
+        Enum(SubscriptionStatus),
+        default=SubscriptionStatus.ACTIVE,
+        nullable=False
+    )
     remnawave_uuid: Mapped[str] = mapped_column(String(36), unique=True, index=True)
     remnawave_short_uuid: Mapped[str] = mapped_column(String(48), unique=True, index=True)
     subscription_name: Mapped[str]
@@ -150,6 +161,7 @@ class Subscription(Base):
         """
         stmt = (
             select(cls)
+            .options(selectinload(cls.user))
             .where(
                 or_(
                     cls.remnawave_uuid == remna_uuid,

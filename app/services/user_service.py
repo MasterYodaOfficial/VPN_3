@@ -8,7 +8,7 @@ from app.logger import logger
 
 from database.models import User
 from database.session import get_session
-from aiogram.utils.i18n import I18n
+from app.bot.middlewares.i18n import i18n
 
 
 def _generate_referral_code(length: int = 8) -> str:
@@ -72,7 +72,7 @@ class UserService:
 
             # Создаем пользователя, используя метод модели
             lang_code = user_from_tg.language_code
-            if lang_code not in I18n.available_locales: # Проверяем по списку доступных
+            if lang_code not in i18n.available_locales: # Проверяем по списку доступных
                 lang_code = settings.DEFAULT_LANGUAGE
             new_user = await User.create(
                 session=session,

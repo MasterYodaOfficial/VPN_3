@@ -14,13 +14,11 @@ async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
     logger.info(f"Получен PreCheckoutQuery с external_id/payload: {external_id}")
     payment = await payment_service.get_by_external_id(external_id)
     if not payment:
-        # "Платеж не найден в системе. Пожалуйста, создайте его заново."
         error_payment_not_found = _("payment_not_found")
         logger.warning(f"PreCheckoutQuery отклонен: платеж с payload {payload} не найден.")
         await settings.BOT.answer_pre_checkout_query(pre_checkout_query.id, ok=False, error_message=error_payment_not_found)
         return
     if payment.status != "pending":
-        # "Этот платеж уже был обработан. Пожалуйста, создайте новый."
         error_payment_done = _("payment_done")
         logger.warning(f"PreCheckoutQuery отклонен: платеж {payment.id} уже имеет статус {payment.status}.")
         await settings.BOT.answer_pre_checkout_query(pre_checkout_query.id, ok=False, error_message=error_payment_done)

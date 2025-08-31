@@ -5,10 +5,10 @@ import json
 from app.logger import logger
 from app.services.payment_service import payment_service
 from database.session import get_session
-from app.bot.utils.messages import (subscription_purchased_with_config_message, payment_cancelled_message)
 from app.core.config import settings
 from app.bot.keyboards.inlines import get_config_webapp_button
-
+from aiogram.utils.i18n import gettext as _
+from app.bot.middlewares.i18n import i18n
 
 yookassa_router = APIRouter(prefix=settings.PAYMENTS_PATH)
 
@@ -45,28 +45,32 @@ async def yookassa_webhook(request: Request):
     if payment_status == 'succeeded':
         await payment_service.confirm_payment(internal_payment.id)
         try:
-            await settings.BOT.send_message(
-                chat_id=internal_payment.user_id,
-                text=subscription_purchased_with_config_message.format(
-                    tariff_name=tariff.name,
-                    sub_name=subscription.subscription_name,
-                    logo_name=settings.LOGO_NAME
-                ),
-                message_effect_id="5159385139981059251",
-                reply_markup=get_config_webapp_button(subscription.subscription_url)
-            )
+            i18n.current_locale = internal_payment.user.language_code
+            with i18n.context():
+                await settings.BOT.send_message(
+                    chat_id=internal_payment.user_id,
+                    text=_("subscription_purchased_with_config_message").format(
+                        tariff_name=tariff.name,
+                        sub_name=subscription.subscription_name,
+                        logo_name=settings.LOGO_NAME
+                    ),
+                    message_effect_id="5159385139981059251",
+                    reply_markup=get_config_webapp_button(subscription.subscription_url)
+                )
         except Exception as e:
             logger.bind(source="payments_gateways").error(f"Не удалось отправить уведомление об оплате пользователю {internal_payment.user_id}: {e}")
 
     elif payment_status in ['canceled', 'failed']:
         try:
             await payment_service.fail_payment(internal_payment.id)
-            await settings.BOT.send_message(
-                chat_id=internal_payment.user_id,
-                text=payment_cancelled_message.format(
-                    tariff_name=tariff.name
+            i18n.current_locale = internal_payment.user.language_code
+            with i18n.context():
+                await settings.BOT.send_message(
+                    chat_id=internal_payment.user_id,
+                    text=_("payment_cancelled_message").format(
+                        tariff_name=tariff.name
+                    )
                 )
-            )
         except Exception as e:
             logger.bind(source="payments_gateways").error(f"Не удалось отправить уведомление об оплате пользователю {internal_payment.user_id}: {e}")
     return Response(status_code=200)

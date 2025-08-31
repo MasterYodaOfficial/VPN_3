@@ -8,7 +8,7 @@ from database.models import Subscription, User, Tariff
 from database.session import get_session
 import re
 from transliterate import translit
-
+from database.enums import SubscriptionStatus
 
 class SubscriptionService:
     """
@@ -100,7 +100,7 @@ class SubscriptionService:
                 remnawave_uuid=str(remna_user.uuid),
                 remnawave_short_uuid=str(remna_user.short_uuid),
                 subscription_url=remna_user.subscription_url,
-                is_active=True
+                status=SubscriptionStatus.ACTIVE
             )
             # 5. Обновляем статус триала у пользователя в нашей БД
             await user_db.update(session, has_trial=False)
@@ -142,7 +142,7 @@ class SubscriptionService:
                 remnawave_uuid=str(remna_user.uuid),
                 remnawave_short_uuid=str(remna_user.short_uuid),
                 subscription_url=remna_user.subscription_url,
-                is_active=False,
+                status = SubscriptionStatus.DISABLED,
                 tariff_id=tariff.id
             )
             return subscription

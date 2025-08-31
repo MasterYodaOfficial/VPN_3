@@ -2,12 +2,13 @@ from typing import Dict, Any
 from app.logger import logger
 from database.session import get_session
 from app.core.config import settings
-from app.bot.utils.messages import subscription_deactivated_message, subscription_expiration_warning_message
 from app.services.subscription_service import subscription_service
 from database.models import User, Subscription
 from app.services.user_service import _generate_referral_code
-from app.bot.utils.messages import welcome_message_universal
 from app.bot.keyboards.inlines import get_config_webapp_button
+from app.bot.middlewares.i18n import i18n
+from aiogram.utils.i18n import gettext as _
+from database.enums import SubscriptionStatus
 
 
 class UserEventsHandler:
@@ -50,20 +51,22 @@ class UserEventsHandler:
                 remnawave_uuid=str(subscription_from_remna.uuid),
                 remnawave_short_uuid=subscription_from_remna.short_uuid,
                 subscription_url=subscription_from_remna.subscription_url,
-                is_active=True
+                status=SubscriptionStatus.ACTIVE
             )
             logger.info(f"Создана локальная подписка ID:{new_subscription.id} для синхронизации с Remnawave.")
 
             try:
-                await settings.BOT.send_message(
-                    chat_id=subscription_from_remna.telegram_id,
-                    text=welcome_message_universal.format(
-                        subscription_url=subscription_from_remna.subscription_url,
-                        logo_name=settings.LOGO_NAME
-                    ),
-                    reply_markup=get_config_webapp_button(subscription_from_remna.subscription_url)
-                )
-                logger.info(f"Отправлено приветственное сообщение пользователю {subscription_from_remna.telegram_id}.")
+                i18n.current_locale = user_db.language_code
+                with i18n.context():
+                    await settings.BOT.send_message(
+                        chat_id=subscription_from_remna.telegram_id,
+                        text=_("welcome_message_universal").format(
+                            subscription_url=subscription_from_remna.subscription_url,
+                            logo_name=settings.LOGO_NAME
+                        ),
+                        reply_markup=get_config_webapp_button(subscription_from_remna.subscription_url)
+                    )
+                    logger.info(f"Отправлено приветственное сообщение пользователю {subscription_from_remna.telegram_id}.")
             except Exception as e:
                 logger.error(f"Не удалось отправить сообщение пользователю {subscription_from_remna.telegram_id}: {e}")
 
@@ -76,21 +79,25 @@ class UserEventsHandler:
         logger.info(f"WEBHOOK: Получено событие 'user.expired' для подписки {subscription_name} ({telegram_id})")
 
         # Логика: деактивируем подписку в нашей БД и отправляем уведомление
-        subscription = await subscription_service.get_by_remna_uuid(remna_uuid)
-        if not subscription:
-            logger.warning(f"Получен вебхук 'user.expired', но подписка с remna_uuid={remna_uuid} не найдена в локальной БД.")
-            return
-        if subscription and subscription.is_active:
-            async with get_session() as session:
-                await subscription.update(session, is_active=False)
-        try:
-            await settings.BOT.send_message(
-                chat_id=subscription.telegram_id,
-                text=subscription_deactivated_message.format(
-                    sub_name=subscription.subscription_name)
-            )
-        except Exception as e:
-            logger.warning(f"Не удалось отправить уведомление о 'user.expired' пользователю {telegram_id}: {e}")
+        async with get_session() as session:  # <-- Открываем сессию ОДИН РАЗ
+            subscription = await Subscription.get_by_remna_uuid(session, remna_uuid)
+
+            if not subscription:
+                logger.warning(f"Получен вебхук 'user.expired', но подписка с remna_uuid={remna_uuid} не найдена.")
+                return
+
+            if subscription.status == SubscriptionStatus.ACTIVE:
+                await subscription.update(session, status=SubscriptionStatus.DISABLED)
+                try:
+                    i18n.current_locale = subscription.user.language_code
+                    with i18n.context():
+                        await settings.BOT.send_message(
+                            chat_id=subscription.telegram_id,
+                            text=_("subscription_deactivated_message").format(
+                                sub_name=subscription.subscription_name)
+                        )
+                except Exception as e:
+                    logger.warning(f"Не удалось отправить уведомление о 'user.expired' пользователю {telegram_id}: {e}")
 
     async def expires_in_24_hours(self, payload: Dict[str, Any]):
         user_data = payload.get("data", {})
@@ -105,10 +112,12 @@ class UserEventsHandler:
             logger.warning(f"Получен вебхук 'user.expires_in_24_hours', но подписка с remna_uuid={remna_uuid} не найдена в локальной БД.")
             return
         try:
-            await settings.BOT.send_message(
-                chat_id=subscription.telegram_id,
-                text=subscription_expiration_warning_message.format(sub_name=subscription.subscription_name)
-            )
+            i18n.current_locale = subscription.user.language_code
+            with i18n.context():
+                await settings.BOT.send_message(
+                    chat_id=subscription.telegram_id,
+                    text=("subscription_expiration_warning_message").format(sub_name=subscription.subscription_name)
+                )
         except Exception as e:
             logger.warning(
                 f"Не удалось отправить уведомление о 'user.expires_in_24_hours' пользователю {subscription.telegram_id}: {e}")

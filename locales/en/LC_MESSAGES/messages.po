@@ -1,0 +1,417 @@
+# English translations for bot.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the bot project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: bot VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-08-31 04:07+0500\n"
+"PO-Revision-Date: 2025-08-31 04:07+0500\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: app/bot/handlers/about.py:12
+msgid "about_message"
+msgstr ""
+"<b>🌐 ABOUT QuickVPN SERVICE</b>\n"
+"\n"
+"🔐 <b>Security</b>\n"
+"We use only modern protocols and end-to-end encryption (AES-256, ChaCha20).\n"
+"<b>No logs, no tracking</b>. Just pure internet.\n"
+"🚀 <b>Speed</b>\n"
+"No compromises — our servers deliver up to <code>10 Gbps</code>.\n"
+"Streams, Shorts, Reels — lag-free, even during peak hours.\n"
+"📶 <b>Stability</b>\n"
+"Each user gets a <b>personal IP address</b>.\n"
+"✅ This means fewer bans and restrictions from services and social networks.\n"
+"🧠 <b>Simplicity</b>\n"
+"Only the necessary buttons. The entire connection process takes <b>less than 2 minutes</b>.\n"
+"🛡️ <b>Trust</b>\n"
+"Users choose us because we are:\n"
+"• <b>Secure</b> (No-logs policy)\n"
+"• <b>Simple</b> (even for beginners)\n"
+"• <b>Works everywhere</b> (including Turkey, UAE, China, RF)\n"
+"• <b>Real 24/7 support</b>\n"
+"\n"
+"📞 <b>Need help? For questions and suggestions:</b>\n"
+"Contact support directly: <a href=\"https://t.me/{support}\">here</a>\n"
+"or directly to: <a href=\"https://t.me/{owner}\">questions, advertising, proposals</a> — we are online."
+
+#: app/bot/handlers/help.py:10 app/bot/handlers/help.py:49
+msgid "help_main_message"
+msgstr ""
+"<b>🛟 QuickVPN Help Section</b>\n"
+"\n"
+"Here you will find answers to most questions. Please select a section you are interested in:"
+
+#: app/bot/handlers/help.py:21
+msgid "choose_sys"
+msgstr "Choose your operating system:"
+
+#: app/bot/handlers/help.py:26
+msgid "help_faq_message"
+msgstr ""
+"<b>❓ Frequently Asked Questions (FAQ)</b>\n"
+"\n"
+"<b>Q: How many devices can I use with one subscription?</b>\n"
+"A: One subscription is for one device only. This keeps your IP stable and the speed high. For more devices, you can get additional subscriptions.\n"
+"\n"
+"<b>Q: Do you keep logs of my activity?</b>\n"
+"A: No. We strictly follow a No-Logs policy. Your activity is completely anonymous.\n"
+"\n"
+"<b>Q: What if my connection is slow?</b>\n"
+"A: Try reconnecting. In Happ or Hiddify apps, enable the \"Auto ⚡️\" mode — it will connect you to the fastest server automatically.\n"
+"\n"
+"<b>Q: VPN won’t connect, what should I do?</b>\n"
+"A: 1. Check your internet connection.\n"
+"   2. Restart your device.\n"
+"   3. Remove the subscription from the app and add it again via the bot.\n"
+"   4. If nothing helps — contact support."
+
+#: app/bot/handlers/help.py:36
+msgid "help_android_vless"
+msgstr ""
+"📌 <b>Setup Guide for Android</b> 📱\n"
+"\n"
+"1️⃣ In the bot, press «Get Configs». This will open your subscription page.\n"
+"\n"
+"2️⃣ On the page you can:\n"
+"   • Install the <b>Happ</b> app (recommended) or another client like Hiddify or v2RayTun.\n"
+"   • Tap «Open in App» — the subscription will be added automatically.\n"
+"   • Or download the subscription link and paste it into any client manually.\n"
+"\n"
+"✅ Done! The subscription will appear in the app — just press «Connect»."
+
+
+#: app/bot/handlers/help.py:37
+msgid "help_ios_vless"
+msgstr ""
+"📌 <b>Setup Guide for iOS</b> 📱\n"
+"\n"
+"1️⃣ In the bot, press «Get Configs». This will open your subscription page.\n"
+"\n"
+"2️⃣ On the page you can:\n"
+"   • Install the <b>Happ</b> app (recommended) or another client like Hiddify or v2RayTun.\n"
+"   • Tap «Open in App» — the subscription will be added instantly.\n"
+"   • Or download the subscription link and add it manually into any app.\n"
+"\n"
+"✅ Done! The subscription will appear in the app — press «Connect»."
+
+
+#: app/bot/handlers/help.py:38
+msgid "help_desktop_vless"
+msgstr ""
+"📌 <b>Setup Guide for Windows / macOS</b> 💻\n"
+"\n"
+"1️⃣ In the bot, press «Get Configs». This will open your subscription page.\n"
+"\n"
+"2️⃣ On the page you can:\n"
+"   • Download and install <b>Hiddify Next</b> or another client.\n"
+"   • Add the subscription in one click by pressing «Open in App» (if your client supports it).\n"
+"   • Or download the subscription link and paste it manually into the program.\n"
+"\n"
+"✅ Done! The subscription will appear in the client — just press «Connect»."
+
+
+#: app/bot/handlers/profile.py:20
+msgid "profile_message"
+msgstr ""
+"<b>👤 Your Profile</b>\n"
+"\n"
+"🔐 <b>Active subscriptions:</b> <code>{active_subscriptions_count}</code>\n"
+"━━━━━━━━━━━━━━━━━━━\n"
+"📦 <b>Subscription Management:</b>\n"
+"— <b>Each subscription</b> is a multi-server key compiled from several of the least loaded servers\n"
+"— 1 subscription is used per 1 device\n"
+"— Multiple subscriptions can be purchased\n"
+"━━━━━━━━━━━━━━━━━━━\n"
+"🔧 <b>What you can do:</b>\n"
+"🔹 <b>Renew subscription</b> — if it's expiring\n"
+"🔹 <b>Buy a new one</b> — for a new device\n"
+"<i>Choose an action using the buttons below ⬇️</i>"
+
+#: app/bot/handlers/profile.py:40
+msgid "generating_subs"
+msgstr "⏳ Generating trial subscription..."
+
+#: app/bot/handlers/profile.py:44
+msgid "error_subs_create"
+msgstr "❌ Failed to create subscription. Please try again later..."
+
+#: app/bot/handlers/profile.py:49
+msgid "trial_message"
+msgstr ""
+"🎉 <b>Your TRIAL ACCESS is now active!</b>\n"
+"\n"
+"Now you can try <b>🚀 {logo_name}</b> with no limits.\n"
+"\n"
+"👇 Tap the button below to get your config and connect.\n"
+"\n"
+"🔥 <i>Hurry up, trial access is available for a limited time!</i>"
+
+#: app/bot/handlers/profile.py:59 app/bot/handlers/profile.py:101
+msgid "choose_tariff_message"
+msgstr ""
+"💼 <b>Choose a plan that suits you</b>\n"
+"\n"
+"📅 Options from 1 month to 1 year are available\n"
+"💰 The longer the term, the lower the price per month!\n"
+"\n"
+"━━━━━━━━━━━━━━━━━━━\n"
+"📦 <b>What's included in the subscription:</b>\n"
+"• One plan — one subscription\n"
+"• Each subscription is a multi-key from several of the freest servers\n"
+"• The subscription works on one device\n"
+"• You can buy several subscriptions at once (e.g., for the family)\n"
+"\n"
+"━━━━━━━━━━━━━━━━━━━\n"
+"\n"
+"👇 Choose a plan to proceed to payment:"
+
+#: app/bot/handlers/profile.py:68 app/bot/handlers/profile.py:81
+msgid "not_subs"
+msgstr "You have no active subscriptions"
+
+#: app/bot/handlers/profile.py:73
+msgid "choose_subscription_text_extend"
+msgstr "<b>🔁 Renew subscription</b>\nPlease choose which one you want to renew:"
+
+#: app/bot/handlers/profile.py:86
+msgid "active_configs_list_message"
+msgstr ""
+"<b>🔑 Your active VPN accesses</b>\n"
+"\n"
+"Below are all your subscriptions.\n"
+"Just click on the button for the one you need — and a WebApp with the setup will open.\n"
+"\n"
+"<i>💡 All currently available VPN applications (Happ, Hiddify, v2RayTun, and others) are supported.</i>"
+
+#: app/bot/handlers/profile.py:114 app/bot/handlers/profile.py:156
+msgid "choose_payment_message"
+msgstr "<b>💳 Available payment options:</b>"
+
+#: app/bot/handlers/profile.py:135 app/bot/handlers/profile.py:175
+#: app/bot/handlers/stars_handlers.py:49
+msgid "error_payment"
+msgstr "🧐 Something went wrong, please try again later."
+
+#: app/bot/handlers/profile.py:140 app/bot/handlers/profile.py:180
+msgid "payment_message"
+msgstr ""
+"✅ Payment has been created!\n"
+"\n"
+"📝 Plan: <b>{tariff_name}</b>\n"
+"💰 Amount to pay: <b>{amount}₽</b>\n"
+"\n"
+"As soon as you complete the payment, I will send you a notification and connection details.\n"
+"👇 Click the button below to proceed to payment:"
+
+#: app/bot/handlers/referral.py:16
+msgid "referral_message"
+msgstr ""
+"<b>🎉 QuickVPN Referral Program</b>\n"
+"👤 <b>Your account:</b>\n"
+"— 👥 Friends invited: <code>{referrals_count}</code>\n"
+"— 💸 Earned: <code>{earned}₽</code>\n"
+"\n"
+"🔗 <b>Your personal link:</b>\n"
+"<code>https://t.me/{bot_name}?start={referral_code}</code>\n"
+"━━━━━━━━━━━━━━━━━━━\n"
+"<b>💼 How it works:</b>\n"
+"1. Share your link with friends, subscribers, on social media, and in chats\n"
+"2. When someone registers using your link and makes a purchase — you instantly receive <b>{commission_precent}%</b> to your balance!\n"
+"3. The money can be used to pay for VPN or withdrawn upon reaching 1000₽\n"
+"\n"
+"<b>🧠 Tip:</b> try placing the link in:\n"
+"• A Telegram channel / group\n"
+"• Instagram / TikTok bio\n"
+"• A forum or a thematic chat\n"
+"• Under a video or post with a review\n"
+"\n"
+"🎯 <u>Your goal is to bring at least 3 friends</u> and start using VPN for free!\n"
+"\n"
+"🚀 <b>Start earning right now:</b>\n"
+"— Click \"Share\" and send the link to a friend\n"
+"— Or tell how QuickVPN helps you to be in another country digitally, speed up the internet, and save battery\n"
+"\n"
+"🛟 <i>Need help? Contact support or check /help</i>"
+
+#: app/bot/handlers/stars_handlers.py:18
+msgid "payment_not_found"
+msgstr "Payment not found in the system. Please create a new one."
+
+#: app/bot/handlers/stars_handlers.py:24
+msgid "payment_done"
+msgstr "This payment has already been processed. Please create a new one."
+
+#: app/bot/handlers/stars_handlers.py:56
+msgid "subscription_purchased_with_config_message"
+msgstr ""
+"✅ <b>Payment successful!</b>\n"
+"\n"
+"Plan: <b>{tariff_name}</b>\n"
+"Your subscription <code>{sub_name}</code> is now active.\n"
+"\n"
+"👇 Tap the button below to get your config and connect to <b>🚀 {logo_name}</b>!"
+
+
+#: app/bot/handlers/start.py:23
+msgid "start_message"
+msgstr ""
+"Hello, {name}! 👋\n"
+"\n"
+"🔐 <b>QuickVPN</b> — your <u>personal internet accelerator</u> and data protection bro!\n"
+"\n"
+"🌍 <b>What you get in a couple of clicks:</b>\n"
+"🚀 <b>Maximum speed</b> — no lag in Shorts, Reels, YouTube\n"
+"⚡ <b>2-in-1:</b> Protection + Acceleration, saving up to 30% battery\n"
+"🛡️ <b>Absolute privacy</b> — no leaks, unlike free VPNs\n"
+"📶 <b>Stable IP</b> — no bans, no blocks\n"
+"🎯 Works anywhere you have internet.\n"
+"\n"
+"<b>✨ While others are lagging — you are flying!</b>\n"
+"\n"
+"💰 <b>Bonus:</b> invite a friend and get <u>{commission_precent}% of their first purchase</u> right to your balance!\n"
+"\n"
+"——— 👇 <b>Choose an action</b> — everything is in the menu:\n"
+"🔹 /profile — <b>My subscriptions and configs</b>\n"
+"🔹 /referral — <b>Referral program</b>\n"
+"🔹 /help — <b>Connection setup help</b>\n"
+"🔹 /about — <b>About us</b>"
+
+#: app/bot/handlers/start.py:29
+msgid "first_trial_message"
+msgstr ""
+"🎉 🎁\n"
+"You've received <b>🎈 PROMO ACCESS 🎈</b> — to <u>try QuickVPN</u> <b>without limits or ads</b>!\n"
+"🔥 Get your key in <b>/profile</b> and start using it right now! 🚀\n"
+"💡 Don't miss the chance to feel true freedom on the internet — speed, security, and convenience in one package!\n"
+"⚡️ <i>Hurry up while the promo access is active!</i>"
+
+#: app/bot/keyboards/inlines.py:35
+msgid "get_configuration"
+msgstr "📲 Get configuration"
+
+#: app/bot/keyboards/inlines.py:44
+msgid "get_promo"
+msgstr "🎁 Get promo subscription"
+
+#: app/bot/keyboards/inlines.py:46
+msgid "buy_new_sub"
+msgstr "➕ Buy a new subscription"
+
+#: app/bot/keyboards/inlines.py:48
+msgid "extend_sub"
+msgstr "🔁 Renew subscription"
+
+#: app/bot/keyboards/inlines.py:49
+msgid "get_configs"
+msgstr "⚙️ Get active configs"
+
+#: app/bot/keyboards/inlines.py:58
+msgid "try_bot"
+msgstr "🚀 Try QuickVPN — anonymous and fast VPN. Connect in 2 minutes!"
+
+#: app/bot/keyboards/inlines.py:60
+msgid "share_url"
+msgstr "📲 Share link"
+
+#: app/bot/keyboards/inlines.py:104
+msgid "pay"
+msgstr "💳 Pay"
+
+#: app/bot/keyboards/inlines.py:121
+msgid "instructions"
+msgstr "📱 Installation instructions"
+
+#: app/bot/keyboards/inlines.py:122
+msgid "FAQ"
+msgstr "❓ FAQ"
+
+#: app/bot/keyboards/inlines.py:123
+msgid "support"
+msgstr "🗣️ Contact support"
+
+#: app/bot/keyboards/inlines.py:133
+msgid "back_menu"
+msgstr "⬅️ Back to help menu"
+
+#: app/bot/keyboards/inlines.py:140
+msgid "extend_now"
+msgstr "🔁 Renew now"
+
+msgid "language-selection-message"
+msgstr "Please select your language:"
+
+msgid "language-changed-message"
+msgstr "✅ Language has been successfully changed to English."
+
+msgid "subscription_deactivated_message"
+msgstr ""
+"👋 Your subscription <b>{sub_name}</b> has expired.\n"
+"\n"
+"Access to the servers under this subscription has been automatically disabled.\n"
+"\n"
+"To keep enjoying fast and secure internet, you can purchase a new subscription "
+"from the /profile menu.\n"
+"\n"
+"Thank you for being with us!"
+
+msgid "subscription_expiration_warning_message"
+msgstr ""
+"⏳ <b>Your subscription is about to expire!</b>\n"
+"\n"
+"Hello! Your subscription <code>{sub_name}</code> will expire <b>tomorrow</b>.\n"
+"\n"
+"Keep enjoying the internet without limits, lags, or ads. Tap /profile to renew "
+"it in just a couple of clicks and make sure you don’t lose protection when you "
+"need it most."
+
+msgid "welcome_message_universal"
+msgstr ""
+"👋 <b>Welcome to {logo_name}!</b>\n"
+"\n"
+"✅ Your subscription has been successfully activated.\n"
+"\n"
+"👇 Click the button below to open your subscription and connect:\n"
+"<code>{subscription_url}</code>\n"
+"\n"
+"If you have any questions, you can always contact support.\n"
+"Enjoy your experience!"
+
+msgid "payment_cancelled_message_en"
+msgstr ""
+"❌ <b>Payment Cancelled</b>\n"
+"\n"
+"The payment for the plan “<b>{tariff_name}</b>” has been cancelled.\n"
+"\n"
+"If this happened by mistake or you’d like to try again, simply go back to the "
+"/profile menu and restart the purchase process.\n"
+"\n"
+"If you encounter any issues, our support team is always here to help."
+
+msgid "command-start-description"
+msgstr "🚀 Start work"
+
+msgid "command-profile-description"
+msgstr "👤 My profile and subscriptions"
+
+msgid "command-referral-description"
+msgstr "👥 Referral program"
+
+msgid "command-help-description"
+msgstr "🛟 Setup help"
+
+msgid "command-about-description"
+msgstr "ℹ️ About the service"
+
+msgid "command-language-description"
+msgstr "🌍 Change language"

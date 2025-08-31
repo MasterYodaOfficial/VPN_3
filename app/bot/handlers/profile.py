@@ -34,20 +34,17 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
 
     logger.bind(source="bot").info(f"{call.from_user.id}, {call.from_user.first_name}")
     if call.data.startswith("profile"):
-        _, profile_action = call.data.split(":")
+        _pass, profile_action = call.data.split(":")
         if profile_action == "trial":
-            # "⏳ Генерируем пробную подписку..."
             await call.message.edit_text(_("generating_subs"))
             subscription = await subscription_service.create_trial_subscription(call.from_user)
             if subscription is None:
-                # "❌ Не удалось создать подписку. Попробуйте позже..."
                 await call.message.edit_text(_("error_subs_create"))
                 await state.clear()
                 return
             subscription_url = subscription.subscription_url
             await call.message.edit_text(
                 text=_("trial_message").format(
-                    subscription_url=subscription_url,
                     logo_name=settings.LOGO_NAME
                 ),
                 reply_markup=get_config_webapp_button(subscription_url)
@@ -64,7 +61,7 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
             subs_list = await subscription_service.get_active_user_subscriptions(call.from_user)
             if not subs_list:
                 await call.message.edit_text(
-                    # "У вас нет активных подписок"
+                    #
                     text=_("not_subs")
                 )
                 await state.clear()
@@ -94,7 +91,7 @@ async def get_action_profile(call: CallbackQuery, state: FSMContext):
 async def get_subscription_extend(call: CallbackQuery, state: FSMContext):
     """Получает кнопку с выбранным конфигом для продления предоставляет вариант тарифа"""
     if call.data.startswith("renew"):
-        _, sub_id = call.data.split(":")
+        _pass, sub_id = call.data.split(":")
         await state.update_data(sub_id=int(sub_id))
         tariffs = await tariff_service.get_active_tariffs()
         await call.message.edit_text(
@@ -108,7 +105,7 @@ async def get_subscription_extend(call: CallbackQuery, state: FSMContext):
 async def get_tariff_extend(call: CallbackQuery, state: FSMContext):
     """Принимает тариф для продления и предоставляет вариант оплаты"""
     if call.data.startswith("choose_tariff"):
-        _, tariff_id = call.data.split(":")
+        _pass, tariff_id = call.data.split(":")
         await state.update_data(tariff_id=int(tariff_id))
         await call.message.edit_text(
             text=_("choose_payment_message"),
@@ -121,7 +118,7 @@ async def get_tariff_extend(call: CallbackQuery, state: FSMContext):
 async def get_payment_method_extend(call: CallbackQuery, state: FSMContext):
     """Принимаем вариант оплаты формируем ссылку на оплату и ждем..."""
     if call.data.startswith("pay"):
-        _, payment_method = call.data.split(":")
+        _pass, payment_method = call.data.split(":")
         data = await state.get_data()
         tariff_id = data["tariff_id"]
         sub_id = data["sub_id"]
@@ -150,7 +147,7 @@ async def get_payment_method_extend(call: CallbackQuery, state: FSMContext):
 async def get_tariff_buy(call: CallbackQuery, state: FSMContext):
     """Принимает тариф для оформления новой подписки"""
     if call.data.startswith("buy_tariff"):
-        _, tariff_id = call.data.split(":")
+        _pass, tariff_id = call.data.split(":")
         await state.update_data(tariff_id=int(tariff_id))
         await call.message.edit_text(
             text=_("choose_payment_message"),
@@ -163,7 +160,7 @@ async def get_tariff_buy(call: CallbackQuery, state: FSMContext):
 async def get_payment_method_buy(call: CallbackQuery, state: FSMContext):
     """Принимаем вариант оплаты для новой подписки формируем ссылку на оплату и ждем..."""
     if call.data.startswith("pay"):
-        _, payment_method = call.data.split(":")
+        _pass, payment_method = call.data.split(":")
         data = await state.get_data()
         tariff_id = data["tariff_id"]
         payment_data = await payment_service.create_payment_link(

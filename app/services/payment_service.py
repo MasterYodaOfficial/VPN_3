@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple, Type
 
 from aiogram.types import User as UserTG
+from alembic.util import status
+
 from app.core.config import settings
 from app.logger import logger
 
@@ -12,7 +14,7 @@ from app.payments_gateways.telegram_stars_gateway import TelegramStarsGateway
 from app.services.subscription_service import subscription_service
 
 # --- Импортируем модели напрямую ---
-from database.enums import PaymentMethod
+from database.enums import PaymentMethod, SubscriptionStatus
 from database.models import Payment, Subscription, Tariff, User
 from database.session import get_session
 from app.services.remnawave_service import remna_service
@@ -121,14 +123,14 @@ class PaymentService:
             # 1. Обновляем подписку
             subscription: Subscription = payment.subscription
             tariff: Tariff = payment.tariff
-            current_end_date = subscription.end_date if subscription.is_active and subscription.end_date > datetime.now() else datetime.now()
+            current_end_date = subscription.end_date if subscription.status == SubscriptionStatus.ACTIVE and subscription.end_date > datetime.now() else datetime.now()
             new_end_date = current_end_date + timedelta(days=tariff.duration_days)
 
             # Обновляем дату в Remnawave
             await remna_service.update_user_expiration(subscription.remnawave_uuid, new_end_date)
 
             # Обновляем дату и статус в нашей БД
-            await subscription.update(session, end_date=new_end_date, is_active=True)
+            await subscription.update(session, end_date=new_end_date, status=SubscriptionStatus.ACTIVE)
 
             # 2. Обновляем статус платежа
             payment.status = "succeeded"  # Используем succeeded для консистентности с YooKassa

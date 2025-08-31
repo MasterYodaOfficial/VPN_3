@@ -1,0 +1,168 @@
+# Translations template for bot.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the bot project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: bot VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-08-31 04:07+0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: app/bot/handlers/about.py:12
+msgid "about_message"
+msgstr ""
+
+#: app/bot/handlers/help.py:10 app/bot/handlers/help.py:49
+msgid "help_main_message"
+msgstr ""
+
+#: app/bot/handlers/help.py:21
+msgid "choose_sys"
+msgstr ""
+
+#: app/bot/handlers/help.py:26
+msgid "help_faq_message"
+msgstr ""
+
+#: app/bot/handlers/help.py:36
+msgid "help_android_vless"
+msgstr ""
+
+#: app/bot/handlers/help.py:37
+msgid "help_ios_vless"
+msgstr ""
+
+#: app/bot/handlers/help.py:38
+msgid "help_desktop_vless"
+msgstr ""
+
+#: app/bot/handlers/profile.py:20
+msgid "profile_message"
+msgstr ""
+
+#: app/bot/handlers/profile.py:40
+msgid "generating_subs"
+msgstr ""
+
+#: app/bot/handlers/profile.py:44
+msgid "error_subs_create"
+msgstr ""
+
+#: app/bot/handlers/profile.py:49
+msgid "trial_message"
+msgstr ""
+
+#: app/bot/handlers/profile.py:59 app/bot/handlers/profile.py:101
+msgid "choose_tariff_message"
+msgstr ""
+
+#: app/bot/handlers/profile.py:68 app/bot/handlers/profile.py:81
+msgid "not_subs"
+msgstr ""
+
+#: app/bot/handlers/profile.py:73
+msgid "choose_subscription_text_extend"
+msgstr ""
+
+#: app/bot/handlers/profile.py:86
+msgid "active_configs_list_message"
+msgstr ""
+
+#: app/bot/handlers/profile.py:114 app/bot/handlers/profile.py:156
+msgid "choose_payment_message"
+msgstr ""
+
+#: app/bot/handlers/profile.py:135 app/bot/handlers/profile.py:175
+#: app/bot/handlers/stars_handlers.py:49
+msgid "error_payment"
+msgstr ""
+
+#: app/bot/handlers/profile.py:140 app/bot/handlers/profile.py:180
+msgid "payment_message"
+msgstr ""
+
+#: app/bot/handlers/referral.py:16
+msgid "referral_message"
+msgstr ""
+
+#: app/bot/handlers/stars_handlers.py:18
+msgid "payment_not_found"
+msgstr ""
+
+#: app/bot/handlers/stars_handlers.py:24
+msgid "payment_done"
+msgstr ""
+
+#: app/bot/handlers/stars_handlers.py:56
+msgid "subscription_purchased_with_config_message"
+msgstr ""
+
+#: app/bot/handlers/start.py:23
+msgid "start_message"
+msgstr ""
+
+#: app/bot/handlers/start.py:29
+msgid "first_trial_message"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:35
+msgid "get_configuration"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:44
+msgid "get_promo"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:46
+msgid "buy_new_sub"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:48
+msgid "extend_sub"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:49
+msgid "get_configs"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:58
+msgid "try_bot"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:60
+msgid "share_url"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:104
+msgid "pay"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:121
+msgid "instructions"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:122
+msgid "FAQ"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:123
+msgid "support"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:133
+msgid "back_menu"
+msgstr ""
+
+#: app/bot/keyboards/inlines.py:140
+msgid "extend_now"
+msgstr ""
+

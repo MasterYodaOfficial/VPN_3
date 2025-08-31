@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     PAYMENTS_PATH: str = "/payments"
 
     # --- Языковые настройки ---
-    LOCALES_DIR = "locales"
+    LOCALES_DIR: str = "locales"
     DEFAULT_LANGUAGE: str
 
 
