@@ -17,13 +17,17 @@ async def start_command(message: Message, state: FSMContext):
         message=message,
         referral_code=referral_code
     )
-    await message.answer_photo(
-        photo=welcome_image,
-        caption=_("start_message").format(
-            name=message.from_user.first_name,
-            commission_precent=settings.REFERRAL_COMMISSION_PERCENT
+    try:
+        await message.answer_photo(
+            photo=welcome_image,
+            caption=_("start_message").format(
+                name=message.from_user.first_name,
+                commission_precent=settings.REFERRAL_COMMISSION_PERCENT
+            )
         )
-    )
-    if user_db.has_trial and settings.TRIAL_DAYS > 0: # Если есть промо период в боте, будет сообщение.
-        await message.answer(_("first_trial_message"))
+        if user_db.has_trial and settings.TRIAL_DAYS > 0: # Если есть промо период в боте, будет сообщение.
+            await message.answer(_("first_trial_message"))
+    except Exception as e:
+        logger.error(e)
+        await state.clear()
     await state.clear()

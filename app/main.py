@@ -28,6 +28,7 @@ async def lifespan(app: FastAPI):
     await tariff_service.load_and_sync_tariffs("database/tariffs.json")
 
     setup_bot_logic(settings.DP_BOT, settings.BOT)
+    await settings.BOT.delete_webhook(drop_pending_updates=True)
 
     await settings.BOT.set_webhook(
         url=settings.WEBHOOK_BOT_URL,
