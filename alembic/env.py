@@ -1,10 +1,11 @@
 from logging.config import fileConfig
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
 import os
 import sys
+from sqlalchemy import engine_from_config
+from sqlalchemy import pool
+
 from alembic import context
+
 
 # 👇 Добавляем корень проекта в путь
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -17,6 +18,7 @@ load_dotenv()
 config = context.config
 
 config.set_main_option("sqlalchemy.url", os.getenv("ALEMBIC_DATABASE_URL"))
+
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
@@ -36,7 +38,7 @@ target_metadata = models.Base.metadata
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode.
+    """Run alembic in 'offline' mode.
 
     This configures the context with just a URL
     and not an Engine, though an Engine is acceptable
@@ -60,7 +62,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
+    """Run alembic in 'online' mode.
 
     In this scenario we need to create an Engine
     and associate a connection with the context.

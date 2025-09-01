@@ -63,6 +63,39 @@ class User(Base):
     def invited_users_count(self) -> int:
         return len(self.invited_users)
 
+    @property
+    def is_active(self) -> bool:
+        """
+        Определяет, активен ли пользователь на основе его подписок.
+        Пользователь считается активным, если у него есть хотя бы одна активная подписка.
+        """
+        return len(self.active_subscriptions) > 0
+
+    @property
+    def subscription_status_summary(self) -> dict:
+        """
+        Возвращает сводку по статусам подписок пользователя.
+        """
+        summary = {
+            'total': len(self.subscriptions),
+            'active': 0,
+            'expired': 0,
+            'disabled': 0,
+            'limited': 0
+        }
+        
+        for subscription in self.subscriptions:
+            if subscription.status == SubscriptionStatus.ACTIVE:
+                summary['active'] += 1
+            elif subscription.status == SubscriptionStatus.EXPIRED:
+                summary['expired'] += 1
+            elif subscription.status == SubscriptionStatus.DISABLED:
+                summary['disabled'] += 1
+            elif subscription.status == SubscriptionStatus.LIMITED:
+                summary['limited'] += 1
+        
+        return summary
+
     # --- CRUD МЕТОДЫ ДЛЯ МОДЕЛИ USER ---
     @classmethod
     async def get_all_telegram_ids(cls, session: AsyncSession) -> List[int]:
