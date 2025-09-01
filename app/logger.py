@@ -7,7 +7,7 @@ from pathlib import Path
 log_root = Path("logs")
 (bot_dir := log_root / "bot").mkdir(parents=True, exist_ok=True)
 (api_dir := log_root / "api").mkdir(parents=True, exist_ok=True)
-(payments_dir := log_root / "payments").mkdir(parents=True, exist_ok=True)
+(payments_dir := log_root / "payments_gateways").mkdir(parents=True, exist_ok=True)
 (access_dir := log_root / "access").mkdir(parents=True, exist_ok=True)
 (errors_dir := log_root / "errors").mkdir(parents=True, exist_ok=True)
 

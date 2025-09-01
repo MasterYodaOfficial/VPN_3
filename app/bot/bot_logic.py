@@ -1,22 +1,19 @@
-from aiogram import Dispatcher, Bot, F
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
+from aiogram import Dispatcher, Bot, F, Router
 from app.bot.handlers.start import start_command
 from app.bot.handlers.about import about_command
 from app.bot.handlers.profile import (profile_command, get_action_profile, get_subscription_extend,
                               get_payment_method_extend, get_tariff_extend, get_tariff_buy, get_payment_method_buy)
 from app.bot.handlers.referral import referral_command
 from app.bot.handlers.help import help_command, navigate_help_menu, show_install_guide
-from app.bot.handlers.for_admins import statistics, broadcast, revorke_stars
 from aiogram.filters import Command
 from app.bot.utils.commands import start_bot
 from app.logger import logger
 from app.bot.utils.throttling import ThrottlingMiddleware
-from app.services.generator_subscriptions import deactivate_expired_subscriptions, update_servers_load_statistics
-from app.services.payment_service import send_expiration_warnings
 from app.bot.utils.statesforms import StepForm
 from app.bot.handlers.stars_handlers import pre_checkout_handler, successful_payment_handler
-
+from app.bot.middlewares.i18n import i18n_middleware
+from app.bot.handlers.language import router as language_router
+from app.bot.handlers.for_admins import broadcast, refund, statistics
 
 
 def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
@@ -28,6 +25,8 @@ def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
     # Антиспам
     dp.message.middleware(ThrottlingMiddleware(limit=0.2))
     dp.callback_query.middleware(ThrottlingMiddleware(limit=0.2))
+    # Переводчик
+    dp.update.middleware(i18n_middleware)
 
     # Команды юзеров
     dp.message.register(start_command, Command('start'))
@@ -35,15 +34,16 @@ def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
     dp.message.register(profile_command, Command('profile'))
     dp.message.register(referral_command, Command('referral'))
     dp.message.register(help_command, Command('help'))
+    # Смена языка
+    dp.include_router(language_router)
 
-    # Админки
-    dp.message.register(broadcast.broadcast_command, Command('broadcast'))
-    dp.message.register(statistics.admin_command, Command('admin'))
-    dp.message.register(revorke_stars.refund_command, Command('refund'))
-    dp.callback_query.register(broadcast.broadcast_command, F.data == "admin_broadcast_start")
-    dp.message.register(broadcast.receive_broadcast_message, StepForm.WAITING_BROADCAST_MESSAGE)
-    dp.callback_query.register(broadcast.confirm_broadcast_handler, StepForm.CONFIRM_BROADCAST)
-    dp.callback_query.register(statistics.navigate_admin_panel, F.data.startswith("admin_stats:"))
+    # --- Админские команды ---
+    admin_router = Router(name="admin_commands")
+    admin_router.include_router(broadcast.router)
+    admin_router.include_router(refund.router)
+    admin_router.include_router(statistics.router)
+
+    dp.include_router(admin_router)
 
 
     # Движения и Callbacks с /profile
@@ -68,10 +68,6 @@ def setup_bot_logic(dp: Dispatcher, bot: Bot) -> None:
 
 
     # --- Настройка и запуск планировщиков ---
-    scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
-    scheduler.add_job(deactivate_expired_subscriptions, 'cron', hour=2, minute=0, args=[bot]) # Удаление конфигов
-    scheduler.add_job(send_expiration_warnings, 'cron', hour=11, minute=0, args=[bot]) # Уведомление с просьбой оплатить
-    scheduler.add_job(update_servers_load_statistics, 'interval', hours=1) # Активные пользователи каждый час
-    scheduler.start()
+
 
     logger.info("Инициализация бота выполнена, старт...")

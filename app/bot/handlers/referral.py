@@ -1,19 +1,19 @@
 from aiogram.types import Message, FSInputFile
 from aiogram.fsm.context import FSMContext
-from app.bot.utils.messages import referral_message
 from app.bot.keyboards.inlines import referral_share_button
 from app.logger import logger
-from app.services.user_service import register_user_service
+from app.services.user_service import user_service
 from app.core.config import settings
+from aiogram.utils.i18n import gettext as _
 
 
 
 async def referral_command(message: Message, state: FSMContext):
     logger.bind(source="bot").info(f"{message.from_user.id} {message.from_user.first_name}")
-    user_db = await register_user_service(message)
+    user_db = await user_service.register_or_update_user(message)
     referral_image = FSInputFile("app/bot/media/referral.jpg")
     await message.answer_photo(
-        caption=referral_message.format(
+        caption=_("referral_message").format(
             referrals_count=user_db.invited_users_count,
             earned=user_db.balance,
             bot_name=settings.BOT_NAME,

@@ -1,40 +1,55 @@
+from __future__ import annotations
+from datetime import datetime
+from typing import List, Optional, Self
+
 from sqlalchemy import (
-    Column, String, Integer, DateTime, Boolean, ForeignKey, Float, Text, func, Enum
+    String, ForeignKey, func, MetaData, select, or_, Enum
 )
-from sqlalchemy.orm import relationship, declarative_base
-from database.enums import PaymentMethod
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship, selectinload
 
-Base = declarative_base()
+from .enums import PaymentMethod, SubscriptionStatus
 
+naming_convention = {
+    "ix": "ix_%(column_0_label)s",
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_`%(constraint_name)s`",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s",
+}
+Base = declarative_base(metadata=MetaData(naming_convention=naming_convention))
 
 
 class User(Base):
     __tablename__ = "users"
 
-    telegram_id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, nullable=True)
-    link = Column(String, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # --- Колонки с типами ---
+    telegram_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    username: Mapped[Optional[str]]
+    link: Mapped[Optional[str]]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    balance: Mapped[int] = mapped_column(default=0)
+    inviter_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.telegram_id"))
+    referral_code: Mapped[str] = mapped_column(unique=True, index=True)
+    is_admin: Mapped[bool] = mapped_column(default=False)
+    has_trial: Mapped[bool] = mapped_column(default=True)
+    had_first_purchase: Mapped[bool] = mapped_column(default=False)
+    # --- НОВОЕ ПОЛЕ ---
+    language_code: Mapped[str] = mapped_column(String(5), default="ru")
 
-    balance = Column(Integer, default=0)
-
-    # Реферальная система
-    inviter_id = Column(Integer, ForeignKey("users.telegram_id"), nullable=True)
-    inviter = relationship("User", remote_side=[telegram_id], back_populates="invited_users")
-    invited_users = relationship("User", back_populates="inviter")
-
-    referral_code = Column(String, unique=True, index=True)
-    is_admin = Column(Boolean, default=False)
-    has_trial = Column(Boolean, default=True)
-    had_first_purchase = Column(Boolean, default=False)
-
-    # Связи
-    subscriptions = relationship("Subscription", back_populates="user")
-    payments = relationship("Payment", back_populates="user")
+    # --- Связи (relationships) с типами ---
+    inviter: Mapped[Optional["User"]] = relationship(remote_side=[telegram_id], back_populates="invited_users")
+    invited_users: Mapped[List["User"]] = relationship(back_populates="inviter")
+    subscriptions: Mapped[List["Subscription"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    payments: Mapped[List["Payment"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     @property
-    def active_subscriptions(self):
-        return [sub for sub in self.subscriptions if sub.is_active]
+    def active_subscriptions(self) -> List["Subscription"]:
+        return [sub for sub in self.subscriptions if sub.status == SubscriptionStatus.ACTIVE]
+
+    @property
+    def all_subscriptions(self) -> List["Subscription"]:
+        return [sub for sub in self.subscriptions]
 
     @property
     def total_subscriptions_count(self) -> int:
@@ -48,129 +63,239 @@ class User(Base):
     def invited_users_count(self) -> int:
         return len(self.invited_users)
 
+    @property
+    def is_active(self) -> bool:
+        """
+        Определяет, активен ли пользователь на основе его подписок.
+        Пользователь считается активным, если у него есть хотя бы одна активная подписка.
+        """
+        return len(self.active_subscriptions) > 0
+
+    @property
+    def subscription_status_summary(self) -> dict:
+        """
+        Возвращает сводку по статусам подписок пользователя.
+        """
+        summary = {
+            'total': len(self.subscriptions),
+            'active': 0,
+            'expired': 0,
+            'disabled': 0,
+            'limited': 0
+        }
+        
+        for subscription in self.subscriptions:
+            if subscription.status == SubscriptionStatus.ACTIVE:
+                summary['active'] += 1
+            elif subscription.status == SubscriptionStatus.EXPIRED:
+                summary['expired'] += 1
+            elif subscription.status == SubscriptionStatus.DISABLED:
+                summary['disabled'] += 1
+            elif subscription.status == SubscriptionStatus.LIMITED:
+                summary['limited'] += 1
+        
+        return summary
+
+    # --- CRUD МЕТОДЫ ДЛЯ МОДЕЛИ USER ---
+    @classmethod
+    async def get_all_telegram_ids(cls, session: AsyncSession) -> List[int]:
+        """Возвращает список всех telegram_id пользователей."""
+        stmt = select(cls.telegram_id)
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+    @classmethod
+    async def get_by_telegram_id(cls, session: AsyncSession, telegram_id: int) -> Optional[Self]:
+        """Получает пользователя со всеми его связанными данными по telegram_id."""
+        stmt = (
+            select(cls)
+            .options(
+                selectinload(cls.subscriptions),
+                selectinload(cls.invited_users),
+                selectinload(cls.inviter),
+            )
+            .where(cls.telegram_id == telegram_id)
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    @classmethod
+    async def get_by_referral_code(cls, session: AsyncSession, referral_code: str) -> Optional[Self]:
+        """Находит пользователя по его реферальному коду."""
+        stmt = select(cls).where(cls.referral_code == referral_code)
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    @classmethod
+    async def create(cls, session: AsyncSession, **kwargs) -> Self:
+        """Создает нового пользователя."""
+        user = cls(**kwargs)
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        return user
+
+    async def update(self, session: AsyncSession, **kwargs) -> Self:
+        """Обновляет поля текущего объекта пользователя."""
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        await session.commit()
+        await session.refresh(self)
+        return self
+
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    telegram_id = Column(Integer, ForeignKey("users.telegram_id"))
-    start_date = Column(DateTime(timezone=True), server_default=func.now())
-    end_date = Column(DateTime(timezone=True), nullable=False)
-    is_active = Column(Boolean, default=True)
-
-    service_name = Column(String, nullable=False)
-    uuid_name = Column(String, nullable=False)
-    access_key = Column(String, unique=True, index=True, nullable=False)
-
-    tariff_id = Column(Integer, ForeignKey("tariffs.id"), nullable=True)
-
-    # Промокод (если использован)
-    promo_id = Column(Integer, ForeignKey("promocodes.id"), nullable=True)
-
-    # Связи
-    user = relationship("User", back_populates="subscriptions")
-    tariff = relationship("Tariff", back_populates="subscriptions")
-    configs = relationship(
-        "Config",
-        back_populates="subscription",
-        cascade="all, delete-orphan"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    telegram_id: Mapped[int] = mapped_column(ForeignKey("users.telegram_id"))
+    start_date: Mapped[datetime] = mapped_column(server_default=func.now())
+    end_date: Mapped[datetime]
+    status: Mapped[SubscriptionStatus] = mapped_column(
+        Enum(SubscriptionStatus),
+        default=SubscriptionStatus.ACTIVE,
+        nullable=False
     )
-    promo = relationship("Promocode", back_populates="subscriptions")
-    payments = relationship("Payment", back_populates="subscription")
+    remnawave_uuid: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    remnawave_short_uuid: Mapped[str] = mapped_column(String(48), unique=True, index=True)
+    subscription_name: Mapped[str]
+    subscription_url: Mapped[str]
+    tariff_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tariffs.id"))
+    promo_id: Mapped[Optional[int]] = mapped_column(ForeignKey("promocodes.id"))
 
+    user: Mapped["User"] = relationship(back_populates="subscriptions")
+    tariff: Mapped[Optional["Tariff"]] = relationship(back_populates="subscriptions")
+    promo: Mapped[Optional["Promocode"]] = relationship(back_populates="subscriptions")
+    payments: Mapped[List["Payment"]] = relationship(back_populates="subscription", cascade="all, delete-orphan")
 
-class Config(Base):
-    __tablename__ = "configs"
+    @classmethod
+    async def create(cls, session: AsyncSession, **kwargs) -> Self:
+        subscription = cls(**kwargs)
+        session.add(subscription)
+        await session.commit()
+        await session.refresh(subscription)
+        return subscription
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    subscription_id = Column(
-        Integer,
-        ForeignKey("subscriptions.id", ondelete="CASCADE")
-    )
+    @classmethod
+    async def get_by_id(cls, session: AsyncSession, sub_id: int) -> Optional[Self]:
+        return await session.get(cls, sub_id)
 
-    server_id = Column(Integer, ForeignKey("servers.id"))
+    @classmethod
+    async def get_by_remna_uuid(cls, session: AsyncSession, remna_uuid: str) -> Optional[Self]:
+        """
+        Находит подписку в локальной БД по-полному или короткому UUID из Remnawave.
 
-    config_data = Column(Text, nullable=False)  # Сгенерированный конфиг (vmess/vless и т.п.)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+        Этот метод необходим для обработки вебхуков, так как Remnawave
+        идентифицирует пользователей по своим UUID.
 
-    subscription = relationship("Subscription", back_populates="configs")
-    server = relationship("Server", back_populates="configs")
+        :param session: Сессия SQLAlchemy.
+        :param remna_uuid: Полный или короткий UUID пользователя из Remnawave.
+        :return: Объект Subscription или None, если ничего не найдено.
+        """
+        stmt = (
+            select(cls)
+            .options(selectinload(cls.user))
+            .where(
+                or_(
+                    cls.remnawave_uuid == remna_uuid,
+                    cls.remnawave_short_uuid == remna_uuid
+                )
+            )
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
 
-
-class Server(Base):
-    __tablename__ = "servers"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-    api_url = Column(String, nullable=False)
-
-    link_ip = Column(String, nullable=True)
-    login = Column(String, nullable=True)
-    password = Column(String, nullable=True)
-
-    max_clients = Column(Integer)
-    current_clients = Column(Integer, default=0)
-    is_active = Column(Boolean, default=True)
-
-    # Связи
-    configs = relationship("Config", back_populates="server")
+    async def update(self, session: AsyncSession, **kwargs) -> Self:
+        """Обновляет поля текущей подписки."""
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        await session.commit()
+        await session.refresh(self)
+        return self
 
 
 class Payment(Base):
-    __tablename__ = "payments"
+    __tablename__ = "payments_gateways"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.telegram_id"))
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.telegram_id"))
+    amount: Mapped[int]
+    currency: Mapped[str] = mapped_column(default="RUB")
+    status: Mapped[str] = mapped_column(default="pending")
+    method: Mapped[PaymentMethod]
+    external_payment_id: Mapped[Optional[str]] = mapped_column(unique=True)
+    subscription_id: Mapped[int] = mapped_column(ForeignKey("subscriptions.id"))
+    tariff_id: Mapped[int] = mapped_column(ForeignKey("tariffs.id"))
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
-    amount = Column(Integer, nullable=False)
-    currency = Column(String, default="RUB")
-    status = Column(String, default="pending")  # pending, success, failed
-    method = Column(Enum(PaymentMethod), nullable=False)  # yookassa, cripto
-    external_payment_id = Column(String, unique=True, nullable=True)
-    subscription_id = Column(Integer, ForeignKey("subscriptions.id"), nullable=False)
-    tariff_id = Column(Integer, ForeignKey("tariffs.id"), nullable=False)
+    user: Mapped["User"] = relationship(back_populates="payments")
+    subscription: Mapped["Subscription"] = relationship(back_populates="payments")
+    tariff: Mapped["Tariff"] = relationship(back_populates="payments")
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    @classmethod
+    async def create(cls, session: AsyncSession, **kwargs) -> Self:
+        payment = cls(**kwargs)
+        session.add(payment)
+        await session.commit()
+        await session.refresh(payment)
+        return payment
 
-    user = relationship("User", back_populates="payments")
-    subscription = relationship("Subscription", back_populates="payments")
-    tariff = relationship("Tariff", back_populates="payments")
+    @classmethod
+    async def get_by_id_with_relations(cls, session: AsyncSession, payment_id: int) -> Optional[Self]:
+        stmt = (
+            select(cls).where(cls.id == payment_id).options(
+                selectinload(cls.subscription).selectinload(Subscription.user),
+                selectinload(cls.tariff),
+            )
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    @classmethod
+    async def get_by_external_id(cls, session: AsyncSession, external_id: str) -> Optional[Self]:
+        stmt = select(cls).where(cls.external_payment_id == external_id).options(
+            selectinload(cls.subscription),
+            selectinload(cls.tariff),
+            selectinload(cls.user)
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
 
 
 class Promocode(Base):
     __tablename__ = "promocodes"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    code = Column(String, unique=True, nullable=False)
-    discount_percent = Column(Integer, nullable=False)  # Например: 10 = 10%
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(unique=True)
+    discount_percent: Mapped[int]
+    usage_limit: Mapped[int] = mapped_column(default=1)
+    used_count: Mapped[int] = mapped_column(default=0)
+    is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
-    usage_limit = Column(Integer, default=1)
-    used_count = Column(Integer, default=0)
-    is_active = Column(Boolean, default=True)
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    subscriptions = relationship("Subscription", back_populates="promo")
+    subscriptions: Mapped[List["Subscription"]] = relationship(back_populates="promo")
 
 
 class Tariff(Base):
     __tablename__ = "tariffs"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)  # Название: "1 месяц", "6 месяцев" и т.п.
-    duration_days = Column(Integer, nullable=False)  # Сколько дней длится подписка
-    price = Column(Integer, nullable=False)
-    currency = Column(String, default="RUB")
-    is_active = Column(Boolean, default=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str]
+    duration_days: Mapped[int]
+    price: Mapped[int]
+    currency: Mapped[str] = mapped_column(default="RUB")
+    is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    subscriptions: Mapped[List["Subscription"]] = relationship(back_populates="tariff")
+    payments: Mapped[List["Payment"]] = relationship(back_populates="tariff")
 
+    @classmethod
+    async def get_active(cls, session: AsyncSession) -> List[Self]:
+        stmt = select(cls).where(cls.is_active == True).order_by(cls.price)
+        result = await session.execute(stmt)
+        return result.scalars().all()
 
-    subscriptions = relationship("Subscription", back_populates="tariff")
-    payments = relationship("Payment", back_populates="tariff")
-
-
-
-
-
-
+    @classmethod
+    async def get_by_id(cls, session: AsyncSession, tariff_id: int) -> Optional[Self]:
+        return await session.get(cls, tariff_id)
