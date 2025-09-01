@@ -41,3 +41,4 @@ database/tariffs.json
 /user.modified.json
 /users.created.json
 /Users.ods
+/.env_real
