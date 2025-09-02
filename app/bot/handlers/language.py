@@ -3,8 +3,7 @@
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
-from aiogram.utils.i18n import gettext as _
-
+from aiogram.fsm.context import FSMContext
 from app.bot.keyboards.inlines import language_selection_buttons
 from aiogram.utils.i18n import gettext as _, I18n
 from database.models import User
@@ -14,8 +13,9 @@ router = Router(name=__name__)
 
 
 @router.message(Command("language"))
-async def language_command(message: Message):
+async def language_command(message: Message, state: FSMContext):
     """Отправляет сообщение с предложением сменить язык."""
+    await state.clear()
     await message.answer(
         _("language-selection-message"),
         reply_markup=language_selection_buttons()

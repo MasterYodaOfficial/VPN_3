@@ -25,7 +25,7 @@ class YooKassaGateway(BaseGateway):
                 "return_url": f"https://t.me/{settings.BOT_NAME}"
             },
             "capture": True,
-            "description": f"Оплата тарифа '{tariff.name}' для {settings.LOGO_NAME}"
+            "description": f"Оплата подписки '{tariff.name}'"
         }
         try:
             payment = await asyncio.to_thread(

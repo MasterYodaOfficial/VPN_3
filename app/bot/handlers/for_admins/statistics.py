@@ -7,17 +7,18 @@ from aiogram.types import Message, CallbackQuery
 from app.bot.keyboards.inlines import admin_panel_buttons, back_to_admin_panel_button
 from app.services.user_service import user_service
 from app.services.admin_service import admin_service
+from aiogram.fsm.context import FSMContext
 
 router = Router(name=__name__)
 
 
 @router.message(Command("admin"))
-async def admin_command(message: Message):
+async def admin_command(message: Message, state: FSMContext):
     """Точка входа в админ-панель."""
     user_db = await user_service.register_or_update_user(message)
     if not user_db.is_admin:
         return
-
+    await state.clear()
     await message.answer(
         "<b>👑 Панель администратора</b>\nВыберите раздел для просмотра.",
         reply_markup=admin_panel_buttons()
