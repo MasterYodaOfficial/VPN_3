@@ -9,6 +9,7 @@ from database.session import get_session
 import re
 from transliterate import translit
 from database.enums import SubscriptionStatus
+import uuid
 
 class SubscriptionService:
     """
@@ -78,9 +79,9 @@ class SubscriptionService:
                 return None
             # 2. Готовим данные для Remnawave.
             # Генерируем уникальное имя подписки для пользователя в панели, чтобы избежать конфликтов
-            sub_count = user_db.total_subscriptions_count + 1
+            unique_suffix = uuid.uuid4().hex[:6]
             tg_user_name = self.normalize_username(user_db.username)
-            subscription_name = f"{tg_user_name}-{settings.LOGO_NAME}-{sub_count}"
+            subscription_name = f"{tg_user_name}-{settings.LOGO_NAME}-{unique_suffix}"
             expire_date = datetime.now() + timedelta(days=settings.TRIAL_DAYS)
             # 3. Вызываем сервис для создания пользователя в Remnawave
             remna_user = await remna_service.create_user_subscription(
@@ -119,9 +120,9 @@ class SubscriptionService:
         Это "заготовка", которая будет активирована после успешного платежа.
         """
         async with get_session() as session:
-            sub_count = user_db.total_subscriptions_count + 1
+            unique_suffix = uuid.uuid4().hex[:6]
             tg_user_name = self.normalize_username(user_db.username)
-            subscription_name = f"{tg_user_name}-{settings.LOGO_NAME}-{sub_count}"
+            subscription_name = f"{tg_user_name}-{settings.LOGO_NAME}-{unique_suffix}"
             expire_date = datetime.now() - timedelta(days=1)
             # Создаем пользователя в Remnawave с датой окончания "в прошлом",
             # чтобы он был неактивен до момента оплаты.
