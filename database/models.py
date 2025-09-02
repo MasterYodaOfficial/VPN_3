@@ -261,6 +261,14 @@ class Payment(Base):
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def update(self, session: AsyncSession, **kwargs) -> Self:
+        """Обновляет поля текущего платежа."""
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        await session.commit()
+        await session.refresh(self)
+        return self
+
 
 class Promocode(Base):
     __tablename__ = "promocodes"
