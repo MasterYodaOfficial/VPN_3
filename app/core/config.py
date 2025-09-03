@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     SUPPORT_URL: str
     OWNER_NAME: str
     ADMIN_IDS: List[int]
+    INSTRUCTION_LINK: str
 
     # --- Business Logic ---
     TRIAL_DAYS: int = 3

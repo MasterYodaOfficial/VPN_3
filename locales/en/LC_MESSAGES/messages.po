@@ -42,8 +42,8 @@ msgstr ""
 "• <b>Real 24/7 support</b>\n"
 "\n"
 "📞 <b>Need help? For questions and suggestions:</b>\n"
-"Contact support directly: <a href=\"https://t.me/{support}\">here</a>\n"
-"or directly to: <a href=\"https://t.me/{owner}\">questions, advertising, proposals</a> — we are online."
+"Contact support directly: <a href=\"{support}">here</a>\n"
+"<a href=\"{owner}">questions, advertising, proposals</a> — we are online."
 
 #: app/bot/handlers/help.py:10 app/bot/handlers/help.py:49
 msgid "help_main_message"
@@ -74,7 +74,9 @@ msgstr ""
 "A: 1. Check your internet connection.\n"
 "   2. Restart your device.\n"
 "   3. Remove the subscription from the app and add it again via the bot.\n"
-"   4. If nothing helps — contact support."
+"   4. If nothing helps — contact support.\n"
+"<a href=\"{owner}">questions, advertising, proposals</a> — we are online."
+
 
 #: app/bot/handlers/help.py:36
 msgid "help_android_vless"
@@ -88,7 +90,9 @@ msgstr ""
 "   • Tap «Open in App» — the subscription will be added automatically.\n"
 "   • Or download the subscription link and paste it into any client manually.\n"
 "\n"
-"✅ Done! The subscription will appear in the app — just press «Connect»."
+"✅ Done! The subscription will appear in the app — just press «Connect».\n"
+"<a href="{video}">Video guide</a> — we’re here to help."
+
 
 
 #: app/bot/handlers/help.py:37
@@ -103,8 +107,8 @@ msgstr ""
 "   • Tap «Open in App» — the subscription will be added instantly.\n"
 "   • Or download the subscription link and add it manually into any app.\n"
 "\n"
-"✅ Done! The subscription will appear in the app — press «Connect»."
-
+"✅ Done! The subscription will appear in the app — press «Connect».\n"
+"<a href="{video}">Video guide</a> — we’re here to help."
 
 #: app/bot/handlers/help.py:38
 msgid "help_desktop_vless"
@@ -118,8 +122,8 @@ msgstr ""
 "   • Add the subscription in one click by pressing «Open in App» (if your client supports it).\n"
 "   • Or download the subscription link and paste it manually into the program.\n"
 "\n"
-"✅ Done! The subscription will appear in the client — just press «Connect»."
-
+"✅ Done! The subscription will appear in the client — just press «Connect».\n"
+"<a href="{video}">Video guide</a> — we’re here to help."
 
 #: app/bot/handlers/profile.py:20
 msgid "profile_message"
@@ -130,7 +134,6 @@ msgstr ""
 "━━━━━━━━━━━━━━━━━━━\n"
 "📦 <b>Subscription Management:</b>\n"
 "— <b>Each subscription</b> is a multi-server key compiled from several of the least loaded servers\n"
-"— 1 subscription is used per 1 device\n"
 "— Multiple subscriptions can be purchased\n"
 "━━━━━━━━━━━━━━━━━━━\n"
 "🔧 <b>What you can do:</b>\n"
@@ -285,7 +288,7 @@ msgstr ""
 "🔹 /profile — <b>My subscriptions and configs</b>\n"
 "🔹 /referral — <b>Referral program</b>\n"
 "🔹 /help — <b>Connection setup help</b>\n"
-"🔹 /about — <b>About us</b>"
+"🔹 /about — <b>About us, contacts, and how everything works</b>"
 
 #: app/bot/handlers/start.py:29
 msgid "first_trial_message"

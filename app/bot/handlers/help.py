@@ -2,7 +2,7 @@ from aiogram.types import Message, CallbackQuery
 from app.bot.keyboards.inlines import help_menu_buttons, install_menu_buttons
 
 from aiogram.utils.i18n import gettext as _
-
+from app.core.config import settings
 
 async def help_command(message: Message):
     """Обработчик команды /help"""
@@ -22,7 +22,9 @@ async def navigate_help_menu(call: CallbackQuery):
         )
     elif action == "faq":
         await call.message.edit_text(
-            text=_("help_faq_message"),
+            text=_("help_faq_message").format(
+                owner=settings.OWNER_NAME
+            ),
             reply_markup=install_menu_buttons()
         )
     await call.answer()
@@ -39,7 +41,9 @@ async def show_install_guide(call: CallbackQuery):
 
     if platform in guides:
         await call.message.edit_text(
-            text=guides[platform],
+            text=guides[platform].format(
+                video=settings.INSTRUCTION_LINK
+            ),
             reply_markup=install_menu_buttons(),
             disable_web_page_preview=True
         )
