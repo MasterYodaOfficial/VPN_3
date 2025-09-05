@@ -133,7 +133,7 @@ class UserEventsHandler:
             with i18n.context():
                 await settings.BOT.send_message(
                     chat_id=subscription.telegram_id,
-                    text=("subscription_expiration_warning_message").format(sub_name=subscription.subscription_name)
+                    text=_("subscription_expiration_warning_message").format(sub_name=subscription.subscription_name)
                 )
         except Exception as e:
             logger.warning(
