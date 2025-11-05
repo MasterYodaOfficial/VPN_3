@@ -1,12 +1,13 @@
 from aiogram.types import Message, CallbackQuery
 from app.bot.keyboards.inlines import help_menu_buttons, install_menu_buttons
-
+from aiogram.fsm.context import FSMContext
 from aiogram.utils.i18n import gettext as _
 from app.core.config import settings
 from app.logger import logger
 
-async def help_command(message: Message):
+async def help_command(message: Message, state: FSMContext):
     """Обработчик команды /help"""
+    await state.clear()
     await message.answer(
         text=_("help_main_message"),
         reply_markup=help_menu_buttons()

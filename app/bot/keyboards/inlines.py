@@ -120,7 +120,7 @@ def help_menu_buttons() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text=_("instructions"), callback_data="help:install")
     kb.button(text=_("FAQ"), callback_data="help:faq")
-    kb.button(text=_("support"), url=f"https://t.me/{settings.SUPPORT_NAME}")
+    kb.button(text=_("support"), url=settings.SUPPORT_URL)
     kb.adjust(1)
     return kb.as_markup()
 
