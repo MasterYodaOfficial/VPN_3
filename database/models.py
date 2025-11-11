@@ -163,6 +163,11 @@ class Subscription(Base):
     tariff_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tariffs.id"))
     promo_id: Mapped[Optional[int]] = mapped_column(ForeignKey("promocodes.id"))
 
+    description: Mapped[Optional[str]]
+    hwidDeviceLimit: Mapped[Optional[int]]
+    first_connected: Mapped[Optional[datetime]]
+    updated_at: Mapped[Optional[datetime]]
+
     user: Mapped["User"] = relationship(back_populates="subscriptions")
     tariff: Mapped[Optional["Tariff"]] = relationship(back_populates="subscriptions")
     promo: Mapped[Optional["Promocode"]] = relationship(back_populates="subscriptions")

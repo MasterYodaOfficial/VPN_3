@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from app.logger import logger
 from database.session import get_session
 from app.core.config import settings
