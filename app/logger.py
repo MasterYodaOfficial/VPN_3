@@ -11,6 +11,9 @@ log_root = Path("logs")
 (access_dir := log_root / "access").mkdir(parents=True, exist_ok=True)
 (errors_dir := log_root / "errors").mkdir(parents=True, exist_ok=True)
 
+(uvicorn_dir := log_root / "uvicorn").mkdir(parents=True, exist_ok=True)
+(httpx_dir := log_root / "httpx").mkdir(parents=True, exist_ok=True)
+
 logger.remove()
 
 # Общий stdout только для INFO и выше
@@ -68,6 +71,23 @@ logger.add("logs/all_logs_{time:YYYY-MM-DD}.log",
            compression="zip",
            level="DEBUG")
 
+logger.add(
+    uvicorn_dir / "uvicorn_{time:YYYY-MM-DD}.log",
+    rotation="00:00",
+    retention="7 days",
+    compression="zip",
+    level="DEBUG",
+    filter=lambda r: r["extra"].get("source") == "uvicorn"
+)
+
+logger.add(
+    httpx_dir / "httpx_{time:YYYY-MM-DD}.log",
+    rotation="00:00",
+    retention="7 days",
+    compression="zip",
+    level="DEBUG",
+    filter=lambda r: r["extra"].get("source") == "httpx"
+)
 
 # --- Перехват стандартного logging в loguru ---
 class InterceptHandler(logging.Handler):
@@ -85,3 +105,10 @@ logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 logging.getLogger("uvicorn").handlers = [InterceptHandler()]
 logging.getLogger("uvicorn.error").handlers = [InterceptHandler()]
 logging.getLogger("uvicorn.access").handlers = [InterceptHandler()]
+logging.getLogger("httpx").handlers = [InterceptHandler()]
+
+
+logging.getLogger("uvicorn").setLevel(logging.WARNING)
+logging.getLogger("uvicorn.error").setLevel(logging.WARNING)
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)

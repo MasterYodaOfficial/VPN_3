@@ -158,11 +158,11 @@ def admin_panel_buttons() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="📊 Общая сводка", callback_data="admin:general")
     # Добавляем кнопки-заглушки
+    kb.button(text="👥 Синхронизация пользователей", callback_data="admin:sinc")
     kb.button(text="💰 Финансы", callback_data="admin:finance")
-    kb.button(text="👥 Пользователи", callback_data="admin:users")
     kb.button(text="🗣️ Рефералы", callback_data="admin:referrals")
     kb.button(text="📣 Рассылка", callback_data="admin:broadcast")
-    kb.adjust(1, 2, 2)
+    kb.adjust(1, 1, 2, 2)
     return kb.as_markup()
 
 def back_to_admin_panel_button() -> InlineKeyboardMarkup:

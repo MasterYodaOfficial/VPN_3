@@ -47,14 +47,19 @@ class UserEventsHandler:
                     is_admin=(subscription_from_remna.telegram_id in settings.ADMIN_IDS)
                 )
             new_subscription = await Subscription.create(
-                session=session, telegram_id=subscription_from_remna.telegram_id,
+                session=session,
+                telegram_id=subscription_from_remna.telegram_id,
                 start_date=subscription_from_remna.created_at,
                 end_date=subscription_from_remna.expire_at,
                 subscription_name=subscription_from_remna.username,
                 remnawave_uuid=str(subscription_from_remna.uuid),
                 remnawave_short_uuid=subscription_from_remna.short_uuid,
                 subscription_url=subscription_from_remna.subscription_url,
-                status=SubscriptionStatus.ACTIVE
+                status=subscription_from_remna.status,
+                description=subscription_from_remna.description,
+                hwidDeviceLimit=subscription_from_remna.hwidDeviceLimit,
+                first_connected=subscription_from_remna.first_connected,
+                updated_at=subscription_from_remna.updated_at
             )
             logger.info(f"Создана локальная подписка ID:{new_subscription.id} для синхронизации с Remnawave.")
 
@@ -81,9 +86,23 @@ class UserEventsHandler:
         async with get_session() as session:
             subscription_from_db = await Subscription.get_by_remna_uuid(session, remna_uuid)
             if subscription_from_db:
+                if subscription_from_remna.updated_at == subscription_from_db.updated_at:
+                    logger.debug("Экранирование хука модифи ремна")
+                    return
                 await subscription_from_db.update(
                     session=session,
-                    end_date=subscription_from_remna.expire_at
+                    telegram_id=subscription_from_remna.telegram_id,
+                    start_date=subscription_from_remna.created_at,
+                    end_date=subscription_from_remna.expire_at,
+                    subscription_name=subscription_from_remna.username,
+                    remnawave_uuid=str(subscription_from_remna.uuid),
+                    remnawave_short_uuid=subscription_from_remna.short_uuid,
+                    subscription_url=subscription_from_remna.subscription_url,
+                    status=subscription_from_remna.status,
+                    description=subscription_from_remna.description,
+                    hwidDeviceLimit=subscription_from_remna.hwidDeviceLimit,
+                    first_connected=subscription_from_remna.first_connected,
+                    updated_at=subscription_from_remna.updated_at
                 )
                 logger.info(f"Данные обновлены {subscription_from_remna.username} {subscription_from_remna.expire_at}")
 
@@ -98,23 +117,35 @@ class UserEventsHandler:
         # Логика: деактивируем подписку в нашей БД и отправляем уведомление
         async with get_session() as session:  # <-- Открываем сессию ОДИН РАЗ
             subscription = await Subscription.get_by_remna_uuid(session, remna_uuid)
-
+            subscription_from_remna = await settings.REMNA_SDK.users.get_user_by_uuid(remna_uuid)
             if not subscription:
                 logger.warning(f"Получен вебхук 'user.expired', но подписка с remna_uuid={remna_uuid} не найдена.")
                 return
-
-            if subscription.status == SubscriptionStatus.ACTIVE:
-                await subscription.update(session, status=SubscriptionStatus.DISABLED)
-                try:
-                    i18n.current_locale = subscription.user.language_code
-                    with i18n.context():
-                        await settings.BOT.send_message(
-                            chat_id=subscription.telegram_id,
-                            text=_("subscription_deactivated_message").format(
-                                sub_name=subscription.subscription_name)
-                        )
-                except Exception as e:
-                    logger.warning(f"Не удалось отправить уведомление о 'user.expired' пользователю {telegram_id}: {e}")
+            await subscription.update(
+                session=session,
+                telegram_id=subscription_from_remna.telegram_id,
+                start_date=subscription_from_remna.created_at,
+                end_date=subscription_from_remna.expire_at,
+                subscription_name=subscription_from_remna.username,
+                remnawave_uuid=str(subscription_from_remna.uuid),
+                remnawave_short_uuid=subscription_from_remna.short_uuid,
+                subscription_url=subscription_from_remna.subscription_url,
+                status=subscription_from_remna.status,
+                description=subscription_from_remna.description,
+                hwidDeviceLimit=subscription_from_remna.hwidDeviceLimit,
+                first_connected=subscription_from_remna.first_connected,
+                updated_at=subscription_from_remna.updated_at
+            )
+            try:
+                i18n.current_locale = subscription.user.language_code
+                with i18n.context():
+                    await settings.BOT.send_message(
+                        chat_id=subscription.telegram_id,
+                        text=_("subscription_deactivated_message").format(
+                            sub_name=subscription.subscription_name)
+                    )
+            except Exception as e:
+                logger.warning(f"Не удалось отправить уведомление о 'user.expired' пользователю {telegram_id}: {e}")
 
     async def expires_in_24_hours(self, payload: Dict[str, Any]):
         user_data = payload.get("data", {})

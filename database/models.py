@@ -210,6 +210,24 @@ class Subscription(Base):
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
+    @classmethod
+    async def get_active(cls, session: AsyncSession) -> list[Self]:
+        """
+        Возвращает список всех активных подписок.
+        """
+        stmt = (
+            select(cls)
+            .where(cls.status == SubscriptionStatus.ACTIVE)
+            .options(
+                selectinload(cls.user),
+                selectinload(cls.tariff),
+                selectinload(cls.promo),
+            )
+        )
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+
     async def update(self, session: AsyncSession, **kwargs) -> Self:
         """Обновляет поля текущей подписки."""
         for key, value in kwargs.items():

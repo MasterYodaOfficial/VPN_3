@@ -1,5 +1,3 @@
-# app/bot/handlers/admin/statistics.py
-
 from datetime import datetime
 from aiogram import Router, F
 from aiogram.filters import Command
@@ -53,6 +51,10 @@ async def navigate_admin_panel(call: CallbackQuery):
             f"  - Доход сегодня: <code>{stats['revenue_today']} ₽</code>\n"
             f"  - Доход за 30 дней: <code>{stats['revenue_month']} ₽</code>"
         )
+    if action == "sinc":
+        await call.message.edit_text("Запуск синхронизации...")
+        status = await admin_service.sinc_users_from_remna()
+        text = "✅ Синхронизация выполнена" if status else "‼️ Ошибка синхронизации"
 
     # Для всех остальных кнопок (finance, users и т.д.) будет использовано сообщение-заглушка
 
