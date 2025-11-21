@@ -18,27 +18,36 @@ async def _send_broadcast_task(bot: Bot, original_message: Message, user_ids: li
     """Приватная фоновая задача для отправки сообщения всем пользователям."""
     success_count, failed_count = 0, 0
     user_ids_to_send = [uid for uid in user_ids if uid != admin_id]
+    async with get_session() as session:
+        for user_id in user_ids_to_send:
+            try:
+                await original_message.send_copy(chat_id=user_id)
+                success_count += 1
+                await asyncio.sleep(0.05)  # Защита от Flood Limits
+            except Exception as e:
+                failed_count += 1
+                logger.warning(f"Ошибка при отправке рассылки пользователю {user_id}: {e}")
+                if "Too Many Requests" in str(e):
+                    await asyncio.sleep(1.5)
+                # Если ошибка связана с блокировкой бота или удалённым пользователем
+                if "bot was blocked" in str(e).lower() or "user is deactivated" in str(e).lower():
+                    # Помечаем пользователя как неактивного
+                    user = await User.get_by_telegram_id(session, user_id)
+                    if user:
+                        await user.update(session, is_active=False)
 
-    for user_id in user_ids_to_send:
+                if "Too Many Requests" in str(e):
+                    await asyncio.sleep(1.5)
+
+        report_text = (
+            "📢 Рассылка завершена.\n\n"
+            f"✅ Успешно доставлено: {success_count}\n"
+            f"❌ Ошибок: {failed_count}"
+        )
         try:
-            await original_message.send_copy(chat_id=user_id)
-            success_count += 1
-            await asyncio.sleep(0.05)  # Защита от Flood Limits
+            await bot.send_message(admin_id, report_text)
         except Exception as e:
-            failed_count += 1
-            logger.warning(f"Ошибка при отправке рассылки пользователю {user_id}: {e}")
-            if "Too Many Requests" in str(e):
-                await asyncio.sleep(1.5)
-
-    report_text = (
-        "📢 Рассылка завершена.\n\n"
-        f"✅ Успешно доставлено: {success_count}\n"
-        f"❌ Ошибок: {failed_count}"
-    )
-    try:
-        await bot.send_message(admin_id, report_text)
-    except Exception as e:
-        logger.error(f"Не удалось отправить отчет о рассылке админу {admin_id}: {e}")
+            logger.error(f"Не удалось отправить отчет о рассылке админу {admin_id}: {e}")
 
 
 @router.message(Command("broadcast"))

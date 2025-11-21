@@ -23,7 +23,9 @@ class AdminService:
             month_ago = now - timedelta(days=30)
 
             # Пользователи
-            total_users_result = await session.execute(select(func.count(User.telegram_id)))
+            total_users_result = await session.execute(
+                select(func.count(User.telegram_id)).where(User.is_active == True)
+            )
             new_today_result = await session.execute(
                 select(func.count(User.telegram_id)).where(User.created_at >= today_start)
             )
