@@ -32,6 +32,7 @@ class User(Base):
     inviter_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.telegram_id"))
     referral_code: Mapped[str] = mapped_column(unique=True, index=True)
     is_admin: Mapped[bool] = mapped_column(default=False)
+    is_active: Mapped[bool] = mapped_column(default=True)
     has_trial: Mapped[bool] = mapped_column(default=True)
     had_first_purchase: Mapped[bool] = mapped_column(default=False)
     # --- НОВОЕ ПОЛЕ ---
@@ -63,13 +64,13 @@ class User(Base):
     def invited_users_count(self) -> int:
         return len(self.invited_users)
 
-    @property
-    def is_active(self) -> bool:
-        """
-        Определяет, активен ли пользователь на основе его подписок.
-        Пользователь считается активным, если у него есть хотя бы одна активная подписка.
-        """
-        return len(self.active_subscriptions) > 0
+    # @property
+    # def is_active(self) -> bool:
+    #     """
+    #     Определяет, активен ли пользователь на основе его подписок.
+    #     Пользователь считается активным, если у него есть хотя бы одна активная подписка.
+    #     """
+    #     return len(self.active_subscriptions) > 0
 
     @property
     def subscription_status_summary(self) -> dict:

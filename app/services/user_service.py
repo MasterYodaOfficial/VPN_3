@@ -48,7 +48,7 @@ class UserService:
                     update_data['username'] = user_from_tg.first_name
                 if user.link != user_from_tg.username:
                     update_data['link'] = user_from_tg.username
-
+                update_data["is_active"] = True
                 if update_data:
                     logger.info(f"Обновление данных для пользователя {user.telegram_id}: {update_data}")
                     await user.update(session, **update_data)
