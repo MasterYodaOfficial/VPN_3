@@ -109,7 +109,7 @@ class UserEventsHandler:
 
     async def expired(self, payload: Dict[str, Any]):
         user_data = payload.get("data", {})
-        remna_uuid = user_data.get("shortUuid")
+        remna_uuid = user_data.get("uuid")
         telegram_id = user_data.get("telegramId")
         subscription_name = user_data.get("username")
         logger.info(f"WEBHOOK: Получено событие 'user.expired' для подписки {subscription_name} ({telegram_id})")
