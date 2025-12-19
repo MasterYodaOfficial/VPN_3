@@ -123,7 +123,7 @@ class SubscriptionService:
             unique_suffix = uuid.uuid4().hex[:6]
             tg_user_name = self.normalize_username(user_db.username)
             subscription_name = f"{tg_user_name}-{settings.LOGO_NAME}-{unique_suffix}"
-            expire_date = datetime.now() - timedelta(days=1)
+            expire_date = datetime.now()
             # Создаем пользователя в Remnawave с датой окончания "в прошлом",
             # чтобы он был неактивен до момента оплаты.
             remna_user = await remna_service.create_user_subscription(

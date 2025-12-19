@@ -8,6 +8,7 @@ from remnawave.models import (
     UpdateUserRequestDto,
     UserResponseDto,
 )
+from database.enums import SubscriptionStatus
 
 
 class RemnaService:
@@ -52,7 +53,8 @@ class RemnaService:
                 telegram_id=telegram_id,
                 description=f"Bot user, tg_id: {telegram_id}",
                 expire_at=expire_date,
-                active_internal_squads=all_squads
+                active_internal_squads=all_squads,
+                status=SubscriptionStatus.DISABLED
             )
 
             response = await settings.REMNA_SDK.users.create_user(create_dto)
@@ -81,7 +83,8 @@ class RemnaService:
         try:
             update_dto = UpdateUserRequestDto(
                 uuid=remna_uuid,
-                expire_at=new_expire_date
+                expire_at=new_expire_date,
+                status=SubscriptionStatus.ACTIVE
             )
             response = await settings.REMNA_SDK.users.update_user(update_dto)
 
