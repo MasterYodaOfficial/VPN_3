@@ -8,7 +8,6 @@ from app.services.user_service import _generate_referral_code
 from app.bot.keyboards.inlines import get_config_webapp_button
 from app.bot.middlewares.i18n import i18n
 from aiogram.utils.i18n import gettext as _
-from database.enums import SubscriptionStatus
 
 
 class UserEventsHandler:
@@ -57,7 +56,7 @@ class UserEventsHandler:
                 subscription_url=subscription_from_remna.subscription_url,
                 status=subscription_from_remna.status,
                 description=subscription_from_remna.description,
-                hwidDeviceLimit=subscription_from_remna.hwidDeviceLimit,
+                hwidDeviceLimit=subscription_from_remna.hwid_device_limit,
                 first_connected=subscription_from_remna.first_connected,
                 updated_at=subscription_from_remna.updated_at
             )
@@ -100,7 +99,7 @@ class UserEventsHandler:
                     subscription_url=subscription_from_remna.subscription_url,
                     status=subscription_from_remna.status,
                     description=subscription_from_remna.description,
-                    hwidDeviceLimit=subscription_from_remna.hwidDeviceLimit,
+                    hwidDeviceLimit=subscription_from_remna.hwid_device_limit,
                     first_connected=subscription_from_remna.first_connected,
                     updated_at=subscription_from_remna.updated_at
                 )
@@ -132,7 +131,7 @@ class UserEventsHandler:
                 subscription_url=subscription_from_remna.subscription_url,
                 status=subscription_from_remna.status,
                 description=subscription_from_remna.description,
-                hwidDeviceLimit=subscription_from_remna.hwidDeviceLimit,
+                hwidDeviceLimit=subscription_from_remna.hwid_device_limit,
                 first_connected=subscription_from_remna.first_connected,
                 updated_at=subscription_from_remna.updated_at
             )
