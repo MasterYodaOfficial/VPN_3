@@ -55,7 +55,7 @@ class RemnaService:
                 description=f"Bot user, tg_id: {telegram_id}",
                 expire_at=expire_date,
                 active_internal_squads=all_squads,
-                status=SubscriptionStatus.DISABLED
+                status=status
             )
 
             response = await settings.REMNA_SDK.users.create_user(create_dto)
