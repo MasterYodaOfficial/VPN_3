@@ -11,6 +11,7 @@ from transliterate import translit
 from database.enums import SubscriptionStatus
 import uuid
 
+
 class SubscriptionService:
     """
     Класс-сервис для управления бизнес-логикой, связанной с подписками.
@@ -87,7 +88,8 @@ class SubscriptionService:
             remna_user = await remna_service.create_user_subscription(
                 telegram_id=user_db.telegram_id,
                 subscription_name=subscription_name,
-                expire_date=expire_date
+                expire_date=expire_date,
+                status=SubscriptionStatus.ACTIVE
             )
             if not remna_user:
                 logger.error(f"Не удалось создать пользователя в Remnawave для триала пользователя {user_db.telegram_id}")

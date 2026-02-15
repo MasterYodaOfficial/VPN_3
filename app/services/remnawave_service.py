@@ -33,7 +33,8 @@ class RemnaService:
         self,
         telegram_id: int,
         subscription_name: str,
-        expire_date: datetime
+        expire_date: datetime,
+        status=SubscriptionStatus.DISABLED,
     ) -> Optional[UserResponseDto]:
         """
         Создает нового пользователя в Remnawave и сразу добавляет его во все отряды.
